@@ -16,18 +16,10 @@ edition.workspace = true
 [lib]
 doctest = false
 
-[[bench]]
-name = "motion"
-harness = false
-
-[[bench]]
-name = "text_view_scroll"
-harness = false
-
 [features]
 decimal = ["dep:rust_decimal"]
 test-support = ["gpui/test-support"]
-inspector = ["gpui_macros/inspector", "gpui/inspector"]
+inspector = ["gpui-macros/inspector", "gpui/inspector"]
 
 [dependencies]
 anyhow.workspace = true
@@ -36,7 +28,7 @@ chrono = "0.4.38"
 data-url = "0.3"
 futures = "0.3"
 gpui.workspace = true
-gpui_macros.workspace = true
+gpui-macros.workspace = true
 instant.workspace = true
 itertools = "0.13.0"
 lsp-types.workspace = true
@@ -78,11 +70,8 @@ windows = { workspace = true, features = ["Win32_Foundation", "Win32_UI_WindowsA
 ashpd = { version = "0.13", default-features = false, features = ["async-io", "settings"] }
 
 [dev-dependencies]
-criterion = "0.5"
-gpui = { workspace = true, features = ["test-support", "bench-support"] }
-gpui_platform = { workspace = true, features = ["bench-support"] }
+gpui = { workspace = true, features = ["test-support"] }
 indoc = "2"
-reqwest_client.workspace = true
 
 [lints]
 workspace = true

@@ -208,7 +208,7 @@ impl ResizableState {
         // This check is only necessary to stop the very first panel from resizing on its own
         // it needs to be passed when the panel is freshly created so we get the initial size,
         // but its also fine when it sometimes passes later.
-        if self.sizes[panel_ix].as_f32() == PANEL_MIN_SIZE.as_f32() {
+        if self.sizes[panel_ix].to_f32() == PANEL_MIN_SIZE.to_f32() {
             self.sizes[panel_ix] = size;
             self.panels[panel_ix].size = Some(size);
         }
@@ -333,7 +333,7 @@ impl ResizableState {
         }
 
         // If total size exceeds container size, adjust the main panel
-        let total_size: Pixels = new_sizes.iter().map(|s| s.as_f32()).sum::<f32>().into();
+        let total_size: Pixels = new_sizes.iter().map(|s| s.to_f32()).sum::<f32>().into();
         if total_size > container_size {
             let overflow = total_size - container_size;
             new_sizes[main_ix] = (new_sizes[main_ix] - overflow).max(size_range.start);
@@ -367,7 +367,7 @@ impl ResizableState {
         }
 
         let container_size = self.container_size();
-        let total = self.sizes.iter().map(|s| s.as_f32()).sum::<f32>();
+        let total = self.sizes.iter().map(|s| s.to_f32()).sum::<f32>();
         if !total.is_finite() || total <= 0. {
             return;
         }

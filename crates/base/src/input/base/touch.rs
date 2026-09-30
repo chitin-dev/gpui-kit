@@ -1,18 +1,22 @@
-//! Touch selection for the input engine: long press, grab handles, edit menu.
+//! Touch selection for the input engine: grab handles and the edit menu.
 //!
-//! A long press selects the word under the finger and keeps following the
-//! finger while it stays down, like the double-click-and-drag it stands in
-//! for. Releasing opens the edit menu; from then on the selection carries a
-//! handle at each end which the styled layer draws and which drags through
-//! [`InputBaseState::begin_edge_drag`].
+//! A touch selection carries a handle at each end which the styled layer draws
+//! and which drags through [`InputBaseState::begin_edge_drag`], plus the edit
+//! menu the platform would show over it. A double tap makes one, selecting the
+//! word under the finger, and so does Select All from the menu itself.
+//!
+//! GPUI also made one from a long press. WGPUI dispatches no long-press event
+//! and `MouseEvent` is sealed, so that producer cannot be rebuilt here and the
+//! gesture is absent rather than inert; `paint_mouse_listeners` in `element.rs`
+//! records the same reasoning for the element side.
 //!
 //! The touch selection remembers the range it made. As soon as the selection
 //! is something else — the caret moved, text was typed, another cursor was
 //! added — the handles and the menu are gone, without anyone having to hide
-//! them. Only the touch gesture and the menu's own actions move the range and
+//! them. Only the touch selection and the menu's own actions move the range and
 //! carry the touch selection along.
 
-use gpui::{Context, LongPressEvent, Pixels, Point, TouchPhase, Window, point};
+use gpui::{Context, Pixels, Point, TouchPhase, Window, point};
 
 use super::{InputBaseState, InputModeKind};
 use crate::touch_selection::{
@@ -133,7 +137,9 @@ impl<M: InputModeKind> InputBaseState<M> {
             return;
         }
         match phase {
-            TouchPhase::Ended | TouchPhase::Cancelled => {
+            // WGPUI folds a cancelled touch into `Ended` — `TouchPhase` has no
+            // `Cancelled` variant — so this arm covers both.
+            TouchPhase::Ended => {
                 if !self.touch_selection.menu_open {
                     self.touch_selection.menu_open = true;
                     cx.notify();
@@ -152,74 +158,6 @@ impl<M: InputModeKind> InputBaseState<M> {
             self.retain_touch_selection();
             self.touch_selection.menu_open = true;
             cx.notify();
-        }
-    }
-
-    /// Handles one phase of a long press inside the input.
-    ///
-    /// Returns whether the started phase was claimed; the caller then captures
-    /// the gesture so the moves keep coming even after the finger leaves the
-    /// input.
-    pub(super) fn on_long_press(
-        &mut self,
-        event: &LongPressEvent,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> bool {
-        match event.phase {
-            TouchPhase::Started => {
-                if self.disabled {
-                    return false;
-                }
-                if !self.focus_handle.is_focused(window) {
-                    window.focus(&self.focus_handle, cx);
-                }
-                // The input selects on its own; keep the window text selection
-                // from starting a drag under it.
-                crate::GlobalState::suppress_text_selection(cx);
-                self.undo_manager.break_transaction_coalescing();
-                M::clear_inline_completion(self, cx);
-                self.touch_selection = TouchSelection::default();
-
-                let (offset, line_end_affinity, _) =
-                    self.resolve_mouse_position(event.start_position);
-                self.selections.remove_all_but_active();
-                self.set_cursor_to(offset);
-                self.select_word(offset, window, cx);
-                let pressed_word = !self.active_selection().is_empty()
-                    && !self.selected_text().chars().all(char::is_whitespace);
-                if !pressed_word {
-                    // Whitespace or an empty field: the press places the caret,
-                    // and the menu offers Paste and Select All.
-                    self.move_to_with_affinity(offset, None, line_end_affinity, cx);
-                    self.selected_word_range = None;
-                }
-                self.selecting = true;
-                self.retain_touch_selection();
-                cx.notify();
-                true
-            }
-            TouchPhase::Moved => {
-                let (offset, line_end_affinity, _) = self.resolve_mouse_position(event.position);
-                if self.selected_word_range.is_some() {
-                    // The press took a word; the sweep grows it a word at a time.
-                    self.select_to_with_affinity(offset, line_end_affinity, cx);
-                } else {
-                    // The press placed the caret; the sweep carries it.
-                    self.move_to_with_affinity(offset, None, line_end_affinity, cx);
-                }
-                self.retain_touch_selection();
-                true
-            }
-            TouchPhase::Ended | TouchPhase::Cancelled => {
-                self.selecting = false;
-                self.selected_word_range = None;
-                if self.touch_selection.range.is_some() {
-                    self.touch_selection.menu_open = true;
-                }
-                cx.notify();
-                true
-            }
         }
     }
 
@@ -325,9 +263,8 @@ impl<M: InputModeKind> InputBaseState<M> {
 #[cfg(test)]
 mod tests {
     use gpui::{
-        AppContext as _, Context, Entity, IntoElement, LongPressEvent, MouseButton,
-        ParentElement as _, Render, Styled as _, TestAppContext, TouchPhase, VisualTestContext,
-        Window, div, point, px,
+        AppContext as _, Context, Entity, IntoElement, MouseButton, ParentElement as _, Render,
+        Styled as _, TestAppContext, VisualTestContext, Window, div, point, px,
     };
 
     use crate::input::{InputState, TextareaState};
@@ -372,68 +309,15 @@ mod tests {
         (input, cx)
     }
 
-    fn long_press(
-        cx: &mut VisualTestContext,
-        phase: TouchPhase,
-        start: (f32, f32),
-        at: (f32, f32),
-    ) {
-        cx.simulate_event(LongPressEvent {
-            phase,
-            start_position: point(px(start.0), px(start.1)),
-            position: point(px(at.0), px(at.1)),
-        });
-        cx.update(|window, cx| {
-            let _ = window.draw(cx);
-        });
-    }
-
-    /// The window position of the caret before `offset`, in the input's line.
-    fn caret_at(input: &Entity<InputState>, cx: &VisualTestContext, offset: usize) -> (f32, f32) {
-        input.read_with(cx, |state, _| {
-            let (_, _, position) = state.line_and_position_for_offset(offset);
-            let position = state.last_bounds.unwrap().origin + position.unwrap();
-            let line_height = state.last_layout.as_ref().unwrap().line_height;
-            (position.x.into(), (position.y + line_height * 0.5).into())
-        })
-    }
-
-    #[gpui::test]
-    fn long_press_selects_word_then_release_opens_menu(cx: &mut TestAppContext) {
-        let (input, cx) = open_input(cx, "quick select value");
-        let start = caret_at(&input, cx, 8);
-        long_press(cx, TouchPhase::Started, start, start);
-        input.read_with(cx, |state, _| {
-            assert_eq!(state.selected_text().to_string(), "select");
-            assert!(!state.is_edit_menu_open());
-            let snapshot = state.touch_selection().expect("touch selection is live");
-            assert!(!snapshot.is_empty());
-            assert!(!snapshot.is_menu_open());
-        });
-
-        let end = caret_at(&input, cx, 18);
-        long_press(cx, TouchPhase::Moved, start, end);
-        input.read_with(cx, |state, _| {
-            assert_eq!(state.selected_text().to_string(), "select value");
-        });
-
-        long_press(cx, TouchPhase::Ended, start, end);
-        input.read_with(cx, |state, _| {
-            assert_eq!(state.selected_text().to_string(), "select value");
-            assert!(state.is_edit_menu_open());
-            let snapshot = state.touch_selection().expect("touch selection is live");
-            assert!(snapshot.is_menu_open());
-            assert!(snapshot.start().left() < snapshot.end().left());
-        });
-    }
-
-    #[gpui::test]
-    fn double_tap_selects_word_with_handles_and_menu(cx: &mut TestAppContext) {
-        let (input, cx) = open_input(cx, "quick select value");
-        let at = caret_at(&input, cx, 8);
+    /// Double taps at `at`, which selects the word under it and makes a touch
+    /// selection. A tap arrives as mouse events, so the touch that began it is
+    /// noted first: that is what tells the input they came from a finger.
+    ///
+    /// WGPUI dispatches no long-press event, so this is the only gesture that
+    /// makes a touch selection; it is the double-click-and-drag GPUI's long
+    /// press stood in for.
+    fn double_tap(cx: &mut VisualTestContext, at: (f32, f32)) {
         let position = point(px(at.0), px(at.1));
-        // A tap arrives as mouse events; the touch that began it is what
-        // tells the input they came from a finger.
         cx.update(|_, cx| crate::GlobalState::note_touch(cx));
         for click_count in [1, 2] {
             cx.simulate_event(gpui::MouseDownEvent {
@@ -453,21 +337,39 @@ mod tests {
         cx.update(|window, cx| {
             let _ = window.draw(cx);
         });
+    }
+
+    /// The window position of the caret before `offset`, in the input's line.
+    fn caret_at(input: &Entity<InputState>, cx: &VisualTestContext, offset: usize) -> (f32, f32) {
+        input.read_with(cx, |state, _| {
+            let (_, _, position) = state.line_and_position_for_offset(offset);
+            let position = state.last_bounds.unwrap().origin + position.unwrap();
+            let line_height = state.last_layout.as_ref().unwrap().line_height;
+            (position.x.into(), (position.y + line_height * 0.5).into())
+        })
+    }
+
+    #[gpui::test]
+    fn double_tap_selects_word_with_handles_and_menu(cx: &mut TestAppContext) {
+        let (input, cx) = open_input(cx, "quick select value");
+        let at = caret_at(&input, cx, 8);
+        double_tap(cx, at);
         input.read_with(cx, |state, _| {
             assert_eq!(state.selected_text().to_string(), "select");
             let snapshot = state
                 .touch_selection()
                 .expect("a double tap is a touch selection");
+            assert!(!snapshot.is_empty());
             assert!(snapshot.is_menu_open());
+            assert!(snapshot.start().left() < snapshot.end().left());
         });
     }
 
     #[gpui::test]
-    fn long_press_on_empty_input_places_caret_with_menu(cx: &mut TestAppContext) {
+    fn double_tap_on_empty_input_places_caret_with_menu(cx: &mut TestAppContext) {
         let (input, cx) = open_input(cx, "");
         let caret = caret_at(&input, cx, 0);
-        long_press(cx, TouchPhase::Started, caret, caret);
-        long_press(cx, TouchPhase::Ended, caret, caret);
+        double_tap(cx, caret);
         input.read_with(cx, |state, _| {
             assert_eq!(state.selected_range(), 0..0);
             let snapshot = state.touch_selection().expect("caret still gets a menu");
@@ -480,8 +382,7 @@ mod tests {
     fn dragging_a_handle_moves_that_end_only(cx: &mut TestAppContext) {
         let (input, cx) = open_input(cx, "quick select value");
         let start = caret_at(&input, cx, 8);
-        long_press(cx, TouchPhase::Started, start, start);
-        long_press(cx, TouchPhase::Ended, start, start);
+        double_tap(cx, start);
 
         // The finger holds the end knob, which hangs below the line.
         let end_caret = caret_at(&input, cx, 12);
@@ -532,9 +433,8 @@ mod tests {
     #[gpui::test]
     fn dragging_one_handle_past_the_other_swaps_them(cx: &mut TestAppContext) {
         let (input, cx) = open_input(cx, "quick select value");
-        let start = caret_at(&input, cx, 8);
-        long_press(cx, TouchPhase::Started, start, start);
-        long_press(cx, TouchPhase::Ended, start, start);
+        let at = caret_at(&input, cx, 8);
+        double_tap(cx, at);
         input.read_with(cx, |state, _| {
             assert_eq!(state.selected_text().to_string(), "select");
         });
@@ -584,8 +484,7 @@ mod tests {
     fn touch_selection_goes_away_when_something_else_moves_the_selection(cx: &mut TestAppContext) {
         let (input, cx) = open_input(cx, "quick select value");
         let start = caret_at(&input, cx, 2);
-        long_press(cx, TouchPhase::Started, start, start);
-        long_press(cx, TouchPhase::Ended, start, start);
+        double_tap(cx, start);
         input.read_with(cx, |state, _| assert!(state.touch_selection().is_some()));
 
         // Select All from the menu keeps it, over the new range.
@@ -614,8 +513,7 @@ mod tests {
         input.read_with(cx, |state, _| assert!(state.touch_selection().is_none()));
 
         // A press elsewhere drops it too.
-        long_press(cx, TouchPhase::Started, start, start);
-        long_press(cx, TouchPhase::Ended, start, start);
+        double_tap(cx, start);
         input.read_with(cx, |state, _| assert!(state.touch_selection().is_some()));
         let elsewhere = caret_at(&input, cx, 0);
         cx.simulate_mouse_down(
@@ -648,8 +546,7 @@ mod tests {
             let position = state.last_bounds.unwrap().origin + position.unwrap();
             (f32::from(position.x), f32::from(position.y) + 4.)
         });
-        long_press(cx, TouchPhase::Started, start, start);
-        long_press(cx, TouchPhase::Ended, start, start);
+        double_tap(cx, start);
         textarea.read_with(cx, |state, _| {
             assert_eq!(state.selected_text().to_string(), "line");
             assert!(state.touch_selection().unwrap().is_menu_open());

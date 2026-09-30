@@ -1,9 +1,10 @@
+use crate::compat::A11yElementExt;
+use crate::compat::{AccessibleAction, Role};
 use std::rc::Rc;
 
 use gpui::{
-    AccessibleAction, AnyElement, App, ElementId, FocusHandle, InteractiveElement as _,
-    IntoElement, KeyBinding, ParentElement, RenderOnce, Role, SharedString,
-    StatefulInteractiveElement as _, StyleRefinement, Styled, Window, div,
+    AnyElement, App, ElementId, FocusHandle, InteractiveElement as _, IntoElement, KeyBinding,
+    ParentElement, RenderOnce, SharedString, StyleRefinement, Styled, Window, div,
     prelude::FluentBuilder as _,
 };
 
@@ -308,6 +309,7 @@ impl RenderOnce for Select {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::compat::Role;
     use gpui::{
         Context, Element as _, Focusable, Render, TestAppContext, VisualTestContext, accesskit, px,
     };

@@ -1,6 +1,7 @@
 use super::*;
 use crate::input::{InputState, TextareaState};
 use gpui::{AppContext as _, TestAppContext};
+use gpui_base::compat::A11yElementExt;
 
 #[test]
 fn validation_takes_precedence_over_focus_and_remains_visible_when_disabled() {
@@ -87,6 +88,8 @@ mod interaction {
         InputEvent as _, LongPressEvent, Modifiers, Render, TouchPhase, VisualTestContext, point,
         px,
     };
+    use gpui_base::compat::A11yElementExt;
+    use gpui_base::compat::Role;
     use gpui_base::test_support::{ElementSnapshot, find};
     use std::rc::Rc;
 
@@ -199,7 +202,7 @@ mod interaction {
 
     fn draw(cx: &mut VisualTestContext) {
         cx.run_until_parked();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
     }
 
     fn snapshot(cx: &mut VisualTestContext, id: impl Into<ElementId>) -> ElementSnapshot {
@@ -541,7 +544,7 @@ mod interaction {
         // A narrow viewport must still give the editor usable space between addons.
         cx.update(|window, cx| {
             window.set_rem_size(px(20.));
-            window.draw(cx).clear(cx);
+            window.draw(cx).clear();
         });
         let bounds = snapshot(&mut cx, ("input", state.entity_id())).bounds();
         assert!(bounds.size.width > px(0.));

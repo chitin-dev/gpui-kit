@@ -269,7 +269,7 @@ impl<T> PieChart<T> {
     /// bounds height.
     fn resolve_outer_radius(&self, bounds: &Bounds<Pixels>) -> f32 {
         if self.outer_radius.is_zero() {
-            bounds.size.height.as_f32() * 0.4
+            bounds.size.height.to_f32() * 0.4
         } else {
             self.outer_radius
         }
@@ -356,8 +356,8 @@ impl<T> Plot for PieChart<T> {
         };
 
         let label_radius = outer_radius + self.label_gap;
-        let center_x = bounds.size.width.as_f32() / 2.;
-        let center_y = bounds.size.height.as_f32() / 2.;
+        let center_x = bounds.size.width.to_f32() / 2.;
+        let center_y = bounds.size.height.to_f32() / 2.;
         let label_arc = Arc::new()
             .inner_radius(label_radius)
             .outer_radius(label_radius);
@@ -476,7 +476,7 @@ impl<T> Plot for PieChart<T> {
         _cx: &App,
     ) -> Option<TooltipState> {
         let outer_radius = self.resolve_outer_radius(&bounds);
-        let position = point(position.x.as_f32(), position.y.as_f32());
+        let position = point(position.x.to_f32(), position.y.to_f32());
 
         let index = self.arcs().into_iter().find_map(|a| {
             Arc::new()

@@ -1,9 +1,10 @@
 use gpui::{
-    Anchor, AnyElement, App, ElementId, Entity, FocusHandle, Focusable, Hsla,
-    InteractiveElement as _, IntoElement, ParentElement, RenderOnce, SharedString,
-    StatefulInteractiveElement as _, StyleRefinement, Styled, TextAlign, Window, div, hsla,
-    linear_color_stop, linear_gradient, prelude::FluentBuilder as _,
+    AnyElement, App, ElementId, Entity, FocusHandle, Focusable, Hsla, InteractiveElement as _,
+    IntoElement, ParentElement, RenderOnce, SharedString, StatefulInteractiveElement as _,
+    StyleRefinement, Styled, TextAlign, Window, div, gradient_color_stop, hsla, linear_gradient,
+    prelude::FluentBuilder as _,
 };
+use gpui_base::compat::Anchor;
 use rust_i18n::t;
 
 use gpui_base::{ColorPicker as BaseColorPicker, ColorSwatch};
@@ -285,7 +286,7 @@ impl ColorPicker {
                             .min_w_16()
                             .text_xs()
                             .text_color(label_color)
-                            .child(t!("ColorPicker.Hue")),
+                            .child(t!("ColorPicker.Hue").to_string()),
                     )
                     .child(
                         div()
@@ -319,7 +320,7 @@ impl ColorPicker {
                             .min_w_16()
                             .text_xs()
                             .text_color(label_color)
-                            .child(t!("ColorPicker.Saturation")),
+                            .child(t!("ColorPicker.Saturation").to_string()),
                     )
                     .child(
                         div()
@@ -357,7 +358,7 @@ impl ColorPicker {
                             .min_w_16()
                             .text_xs()
                             .text_color(label_color)
-                            .child(t!("ColorPicker.Lightness")),
+                            .child(t!("ColorPicker.Lightness").to_string()),
                     )
                     .child(
                         div()
@@ -391,7 +392,7 @@ impl ColorPicker {
                             .min_w_16()
                             .text_xs()
                             .text_color(label_color)
-                            .child(t!("ColorPicker.Alpha")),
+                            .child(t!("ColorPicker.Alpha").to_string()),
                     )
                     .child(
                         div()
@@ -441,8 +442,8 @@ impl ColorPicker {
             .overflow_hidden()
             .bg(linear_gradient(
                 90.,
-                linear_color_stop(start, 0.),
-                linear_color_stop(end, 1.),
+                gradient_color_stop(start, 0.),
+                gradient_color_stop(end, 1.),
             ))
     }
 }
@@ -623,7 +624,7 @@ mod tests {
             state: cx.new(|cx| ColorPickerState::new(window, cx)),
         });
         cx.update(|window, cx| {
-            window.draw(cx).clear(cx);
+            window.draw(cx).clear();
             let swatch_count = 2 + color_palettes().iter().map(Vec::len).sum::<usize>();
             let mut focused = Vec::new();
             for _ in 0..swatch_count {
@@ -709,7 +710,7 @@ mod tests {
         let (view, cx) = cx.add_window_view(|window, cx| SelectHarness {
             state: cx.new(|cx| ColorPickerState::new(window, cx)),
         });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         let open = cx.update(|_, cx| view.read(cx).state.read(cx).is_open());
         assert!(!open, "the picker starts closed");
 
@@ -718,7 +719,7 @@ mod tests {
             gpui::point(gpui::px(300.), gpui::px(16.)),
             Default::default(),
         );
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         let open = cx.update(|_, cx| view.read(cx).state.read(cx).is_open());
         assert!(open, "the whole field is the trigger, like a Select");
     }

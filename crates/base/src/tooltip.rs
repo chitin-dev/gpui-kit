@@ -1,9 +1,11 @@
+use crate::compat::A11yElementExt;
+use crate::compat::Role;
 use std::{rc::Rc, time::Duration};
 
 use gpui::{
     AnyElement, AnyView, App, Bounds, Context, Div, ElementId, InteractiveElement, IntoElement,
-    ParentElement, Pixels, Render, RenderOnce, Role, Stateful, StatefulInteractiveElement, Styled,
-    Task, Window, deferred, div, prelude::FluentBuilder as _, px,
+    ParentElement, Pixels, Render, RenderOnce, Stateful, Styled, Task, Window, deferred, div,
+    prelude::FluentBuilder as _, px,
 };
 
 use crate::{Placement, Positioner};

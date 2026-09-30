@@ -268,32 +268,21 @@ impl InlineFlow {
             .max_w(relative(1.))
             .w(size.width)
             .h(size.height)
+            // A linked image used to answer an auxiliary (middle) click as well,
+            // but WGPUI raises click events for the primary button only, so the
+            // aux registration has no equivalent to be written against.
             .when_some(link.clone(), |this, link| {
-                let aux_link = link.clone();
-                let aux_link_click_handler = link_click_handler.clone();
-                this.cursor_pointer()
-                    .on_click(move |event, window, cx| {
-                        crate::TextSelection::end(window, cx);
-                        cx.stop_propagation();
-                        handle_link_click(
-                            &link_click_handler,
-                            link.url.clone(),
-                            event.clone(),
-                            window,
-                            cx,
-                        );
-                    })
-                    .on_aux_click(move |event, window, cx| {
-                        crate::TextSelection::end(window, cx);
-                        cx.stop_propagation();
-                        handle_link_click(
-                            &aux_link_click_handler,
-                            aux_link.url.clone(),
-                            event.clone(),
-                            window,
-                            cx,
-                        );
-                    })
+                this.cursor_pointer().on_click(move |event, window, cx| {
+                    crate::TextSelection::end(window, cx);
+                    cx.stop_propagation();
+                    handle_link_click(
+                        &link_click_handler,
+                        link.url.clone(),
+                        event.clone(),
+                        window,
+                        cx,
+                    );
+                })
             })
             .into_any_element()
     }
@@ -951,7 +940,7 @@ fn layout_measured_flow(
                         } else {
                             Pixels::ZERO
                         };
-                        let width = shaped_line.width() + padding;
+                        let width = shaped_line.width + padding;
                         // Measure the run by its glyph box. The body strut already
                         // carries the line's leading, so a run only has to fit its
                         // glyphs: leading of its own would make a smaller or
@@ -1174,9 +1163,11 @@ fn line_ranges(
     };
     let rem_size = window.rem_size();
     let font_size = text_style.font_size.to_pixels(rem_size);
+    // WGPUI's wrapper takes the letter spacing it has to measure with; nothing
+    // in this fork sets one, so the wrapped metrics match the shaped runs.
     let mut wrapper = window
         .text_system()
-        .line_wrapper(text_style.font(), font_size);
+        .line_wrapper(text_style.font(), font_size, None);
     let mut ranges = Vec::new();
 
     for hard_line in hard_lines {
@@ -1394,6 +1385,9 @@ fn shaped_spans(
 
 /// Painted width of `range`: in-context glyph advances of the shaped spans it
 /// covers, plus the fixed spans that lie inside it.
+///
+/// Folded rather than summed: WGPUI's `Pixels` has no `Sum` impl, and the
+/// starting zero is what an empty range has to answer anyway.
 fn spans_width(spans: &[ShapedSpan], range: Range<usize>) -> Pixels {
     spans
         .iter()
@@ -1423,7 +1417,7 @@ fn spans_width(spans: &[ShapedSpan], range: Range<usize>) -> Pixels {
                 }
             }
         })
-        .sum()
+        .fold(Pixels::ZERO, |total, width| total + width)
 }
 
 /// Appends the wrap fragments for `range` of `text`. The line wrapper
@@ -1609,11 +1603,29 @@ fn shape_line(
 /// Unlike `Window::line_height`, it is not first rounded to a whole logical
 /// pixel, which would make a flow line taller than a plain one.
 fn plain_line_height(text_style: &TextStyle, rem_size: Pixels, window: &Window) -> Pixels {
-    window.pixel_snap(
+    pixel_snap(
+        window,
         text_style
             .line_height
             .to_pixels(text_style.font_size, rem_size),
     )
+}
+
+/// Rounds a length onto the display's device pixel grid.
+///
+/// GPUI shaped its text against whole device pixels, so a line height that
+/// carries a fraction of one would not line up with the glyphs drawn beside it.
+/// On a fractional scale factor this is a finer rounding than `Pixels::round`,
+/// which is exactly what separates this from `Window::line_height`: rounding a
+/// flow line's height to a whole logical pixel makes it taller than the plain
+/// line the text system lays out at the same font size. WGPUI keeps no helper
+/// for the device grid, so the arithmetic lives here.
+fn pixel_snap(window: &Window, value: Pixels) -> Pixels {
+    let scale_factor = window.scale_factor();
+    if !(scale_factor > 0.) || !scale_factor.is_finite() {
+        return value;
+    }
+    px((value.to_f32() * scale_factor).round() / scale_factor)
 }
 
 /// Returns where GPUI text painting puts the baseline of `shaped_line` in a
@@ -2013,7 +2025,7 @@ mod tests {
         // inline code must not grow to fit them.
         window.update(|_, window, cx| {
             let layout = layout_flow(&items, &[None], &style, None, window, cx);
-            assert_eq!(layout.size.height, window.pixel_snap(px(30.)));
+            assert_eq!(layout.size.height, pixel_snap(window, px(30.)));
         });
     }
 

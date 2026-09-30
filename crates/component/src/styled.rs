@@ -62,15 +62,15 @@ pub(crate) fn popover_shadow(ring: Hsla, strength: f32) -> Vec<BoxShadow> {
     vec![
         // The ring, sitting in the 1px band outside the surface. No blur, so it
         // takes the shader's crisp path rather than the gaussian one.
-        BoxShadow::new(px(0.), px(0.), ring.alpha(ring.a * strength))
-            .blur_radius(px(0.))
-            .spread_radius(px(1.)),
-        BoxShadow::new(px(0.), px(4.), ink)
-            .blur_radius(px(3.))
-            .spread_radius(px(-1.)),
-        BoxShadow::new(px(0.), px(2.), ink)
-            .blur_radius(px(2.))
-            .spread_radius(px(-2.)),
+        box_shadow(
+            px(0.),
+            px(0.),
+            px(0.),
+            px(1.),
+            ring.alpha(ring.a * strength),
+        ),
+        box_shadow(px(0.), px(4.), px(3.), px(-1.), ink),
+        box_shadow(px(0.), px(2.), px(2.), px(-2.), ink),
     ]
 }
 
@@ -85,12 +85,8 @@ pub(crate) fn popover_shadow(ring: Hsla, strength: f32) -> Vec<BoxShadow> {
 pub(crate) fn toast_shadow(strength: f32) -> Vec<BoxShadow> {
     let ink = hsla(0., 0., 0., SURFACE_SHADOW_INK * strength.clamp(0., 1.));
     vec![
-        BoxShadow::new(px(0.), px(10.), ink)
-            .blur_radius(px(7.5))
-            .spread_radius(px(-3.)),
-        BoxShadow::new(px(0.), px(4.), ink)
-            .blur_radius(px(3.))
-            .spread_radius(px(-4.)),
+        box_shadow(px(0.), px(10.), px(7.5), px(-3.), ink),
+        box_shadow(px(0.), px(4.), px(3.), px(-4.), ink),
     ]
 }
 
@@ -114,10 +110,8 @@ pub(crate) fn toast_shadow(strength: f32) -> Vec<BoxShadow> {
 pub(crate) fn raised_shadow() -> Vec<BoxShadow> {
     let ink = hsla(0., 0., 0., SURFACE_SHADOW_INK);
     vec![
-        BoxShadow::new(px(0.), px(1.), ink).blur_radius(px(1.5)),
-        BoxShadow::new(px(0.), px(1.), ink)
-            .blur_radius(px(1.))
-            .spread_radius(px(-1.)),
+        box_shadow(px(0.), px(1.), px(1.5), px(0.), ink),
+        box_shadow(px(0.), px(1.), px(1.), px(-1.), ink),
     ]
 }
 
@@ -278,8 +272,8 @@ pub(crate) fn focus_style<T: Styled + ParentElement>(
     };
     // Shrinking or growing the box by `inset` keeps the line concentric with
     // the element's own corners.
-    let radius = corner_radii(element.style(), rem_size)
-        .map(|value| (*value - inset).max(Pixels::ZERO));
+    let radius =
+        corner_radii(element.style(), rem_size).map(|value| (*value - inset).max(Pixels::ZERO));
     element.child(
         div()
             .when(cfg!(test), |this| {

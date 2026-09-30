@@ -78,7 +78,7 @@ fn label_layout_is_independent_of_field_columns(cx: &mut TestAppContext) {
                 legacy: false,
                 footer: None,
             });
-            cx.update(|window, cx| window.draw(cx).clear(cx));
+            cx.update(|window, cx| window.draw(cx).clear());
             let first = cx.debug_bounds("control-0").unwrap();
             let second = cx.debug_bounds("control-1").unwrap();
             let third = cx.debug_bounds("control-2").unwrap();
@@ -110,7 +110,7 @@ fn footer_spans_columns_after_fields_and_aligns_actions_to_trailing_edge(cx: &mu
                     legacy: false,
                     footer: Some(full_width),
                 });
-                cx.update(|window, cx| window.draw(cx).clear(cx));
+                cx.update(|window, cx| window.draw(cx).clear());
                 let form = cx.debug_bounds("form-container").unwrap();
                 let footer = cx.debug_bounds("footer-content").unwrap();
                 let last = cx.debug_bounds("control-2").unwrap();
@@ -140,7 +140,7 @@ fn default_without_footer_keeps_legacy_geometry(cx: &mut TestAppContext) {
                 legacy,
                 footer: None,
             });
-            cx.update(|window, cx| window.draw(cx).clear(cx));
+            cx.update(|window, cx| window.draw(cx).clear());
             snapshots.push([
                 cx.debug_bounds("form-container").unwrap(),
                 cx.debug_bounds("label-0").unwrap(),
@@ -167,38 +167,36 @@ fn form_applies_styled_refinements(cx: &mut TestAppContext) {
             } else {
                 Form::vertical()
             };
-            div()
-                .w(px(400.))
-                .child(
-                    form.child(
-                        Field::new().child(
-                            div()
-                                .debug_selector(|| "control-0".into())
-                                .w_full()
-                                .h(px(20.)),
-                        ),
-                    )
-                    .child(
-                        Field::new().child(
-                            div()
-                                .debug_selector(|| "control-1".into())
-                                .w_full()
-                                .h(px(20.)),
-                        ),
+            div().w(px(400.)).child(
+                form.child(
+                    Field::new().child(
+                        div()
+                            .debug_selector(|| "control-0".into())
+                            .w_full()
+                            .h(px(20.)),
                     ),
                 )
+                .child(
+                    Field::new().child(
+                        div()
+                            .debug_selector(|| "control-1".into())
+                            .w_full()
+                            .h(px(20.)),
+                    ),
+                ),
+            )
         }
     }
 
     // Default form without custom styling
     let (_, cx) = cx.add_window_view(|_, _| FormCompareHarness { styled: false });
-    cx.update(|window, cx| window.draw(cx).clear(cx));
+    cx.update(|window, cx| window.draw(cx).clear());
     let default_first = cx.debug_bounds("control-0").unwrap();
     let default_second = cx.debug_bounds("control-1").unwrap();
 
     // Styled form with padding 20px and gap_y 30px
     let (_, cx) = cx.add_window_view(|_, _| FormCompareHarness { styled: true });
-    cx.update(|window, cx| window.draw(cx).clear(cx));
+    cx.update(|window, cx| window.draw(cx).clear());
     let styled_first = cx.debug_bounds("control-0").unwrap();
     let styled_second = cx.debug_bounds("control-1").unwrap();
 
@@ -235,11 +233,11 @@ fn hidden_fields_are_not_rendered(cx: &mut TestAppContext) {
     }
 
     let (_, cx) = cx.add_window_view(|_, _| HiddenFieldHarness { hide: false });
-    cx.update(|window, cx| window.draw(cx).clear(cx));
+    cx.update(|window, cx| window.draw(cx).clear());
     let second_row_top = cx.debug_bounds("control-1").unwrap().top();
 
     let (_, cx) = cx.add_window_view(|_, _| HiddenFieldHarness { hide: true });
-    cx.update(|window, cx| window.draw(cx).clear(cx));
+    cx.update(|window, cx| window.draw(cx).clear());
     assert!(cx.debug_bounds("control-1").is_none());
     // The hidden field leaves no grid row behind.
     assert_eq!(cx.debug_bounds("control-2").unwrap().top(), second_row_top);

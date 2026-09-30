@@ -23,7 +23,7 @@ pub const AXIS_GAP: f32 = 18.;
 /// [`TEXT_SIZE`] it is 18px; a styled layer drawing larger labels passes its
 /// own size so the plot shrinks to fit them.
 pub fn axis_gutter(font_size: Pixels) -> f32 {
-    font_size.as_f32() + TEXT_GAP * 4.
+    font_size.to_f32() + TEXT_GAP * 4.
 }
 
 /// Which side of an axis line the tick labels render on.

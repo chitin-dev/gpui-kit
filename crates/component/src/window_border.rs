@@ -240,7 +240,6 @@ impl RenderOnce for WindowBorder {
                                 blur_radius: px(10.),
                                 spread_radius: px(-1.),
                                 offset: point(px(0.0), px(2.0)),
-                                inset: false,
                             },
                             // The contact layer adds definition without increasing the
                             // space between the content and the outer window bounds.
@@ -254,7 +253,6 @@ impl RenderOnce for WindowBorder {
                                 blur_radius: px(3.),
                                 spread_radius: px(0.),
                                 offset: point(px(0.0), px(1.0)),
-                                inset: false,
                             },
                         ])
                     })

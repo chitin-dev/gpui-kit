@@ -505,7 +505,7 @@ mod tests {
         let cx: &mut VisualTestContext = cx;
 
         cx.run_until_parked();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         let renders_after_redraw = renders.load(Ordering::Relaxed);
         cx.run_until_parked();
         assert_eq!(

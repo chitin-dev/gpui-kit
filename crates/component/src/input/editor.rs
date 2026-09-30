@@ -199,7 +199,7 @@ mod tests {
             }
         });
         let state = state.unwrap();
-        VisualTestContext::update(cx, |window, cx| window.draw(cx).clear(cx));
+        VisualTestContext::update(cx, |window, cx| window.draw(cx).clear());
 
         cx.read(|cx| {
             state
@@ -249,7 +249,7 @@ mod tests {
             );
         });
         // A styled render must preserve the registered configuration.
-        VisualTestContext::update(cx, |window, cx| window.draw(cx).clear(cx));
+        VisualTestContext::update(cx, |window, cx| window.draw(cx).clear());
         VisualTestContext::update(cx, |window, cx| {
             state.update(cx, |state, cx| {
                 state.set_value("", window, cx);
@@ -261,7 +261,7 @@ mod tests {
                 state.focus(window, cx);
             });
         });
-        VisualTestContext::update(cx, |window, cx| window.draw(cx).clear(cx));
+        VisualTestContext::update(cx, |window, cx| window.draw(cx).clear());
         cx.simulate_keystrokes("enter");
         cx.read(|cx| assert_eq!(state.read(cx).text().to_string(), "if enabled:\n  "));
     }

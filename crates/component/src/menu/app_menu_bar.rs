@@ -9,9 +9,11 @@ use crate::{
 use gpui::{
     App, AppContext as _, ClickEvent, Context, DismissEvent, Entity, FocusHandle, Focusable,
     InteractiveElement as _, IntoElement, KeyBinding, MouseButton, OwnedMenu, ParentElement,
-    Render, Role, SharedString, StatefulInteractiveElement, Styled, Subscription, Window, anchored,
+    Render, SharedString, StatefulInteractiveElement, Styled, Subscription, Window, anchored,
     deferred, div, prelude::FluentBuilder, px,
 };
+use gpui_base::compat::A11yElementExt;
+use gpui_base::compat::Role;
 
 const CONTEXT: &str = "AppMenuBar";
 pub fn init(cx: &mut App) {
@@ -285,7 +287,7 @@ impl Render for AppMenu {
             .when(is_open, |this| {
                 this.child(deferred(
                     anchored()
-                        .anchor(gpui::Anchor::TopLeft)
+                        .anchor(gpui::Corner::TopLeft)
                         .snap_to_window_with_margin(px(8.))
                         .child(
                             div()

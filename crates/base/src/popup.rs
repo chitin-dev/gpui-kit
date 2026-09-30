@@ -1,9 +1,10 @@
+use crate::compat::{Anchor, BoundsExt as _};
 use std::{cell::Cell, rc::Rc};
 
 use gpui::{
-    Anchor, AnyElement, App, Bounds, Div, ElementId, InteractiveElement, Interactivity,
-    IntoElement, ParentElement, Pixels, Point, RenderOnce, StatefulInteractiveElement,
-    StyleRefinement, Styled, Window, canvas, deferred, div, point, px,
+    AnyElement, App, Bounds, Div, ElementId, InteractiveElement, Interactivity, IntoElement,
+    ParentElement, Pixels, Point, RenderOnce, StatefulInteractiveElement, StyleRefinement, Styled,
+    Window, canvas, deferred, div, point, px,
 };
 
 use crate::{Positioner, ResolvedPosition, StyledExt as _};
@@ -95,6 +96,7 @@ impl Popup {
                 y: trigger_bounds.origin.y - trigger_bounds.size.height,
             },
             Anchor::LeftCenter | Anchor::RightCenter => trigger_bounds.origin,
+            Anchor::Center => trigger_bounds.center(),
         }
     }
 }
@@ -110,6 +112,9 @@ fn anchor_position(anchor: Anchor, trigger: Bounds<Pixels>, offset: Pixels) -> P
         Anchor::BottomRight => trigger.top_right() - point(px(0.), offset),
         Anchor::LeftCenter => trigger.right_center() + point(offset, px(0.)),
         Anchor::RightCenter => trigger.left_center() - point(offset, px(0.)),
+        // `Center` names no side, so there is no outward direction for the
+        // offset to run along: the popup's center lands on the trigger's.
+        Anchor::Center => trigger.center(),
     }
 }
 
@@ -203,6 +208,7 @@ impl RenderOnce for Popup {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::compat::Anchor;
     use gpui::{Context, Render, px};
 
     #[test]

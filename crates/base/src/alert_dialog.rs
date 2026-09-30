@@ -1,8 +1,8 @@
+use crate::compat::Role;
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
     App, ClickEvent, FocusHandle, InteractiveElement as _, IntoElement, MouseButton, ParentElement,
-    Pixels, RenderOnce, Role, StatefulInteractiveElement as _, StyleRefinement, Styled, Window,
-    div,
+    Pixels, RenderOnce, StatefulInteractiveElement as _, StyleRefinement, Styled, Window, div,
 };
 use smallvec::SmallVec;
 

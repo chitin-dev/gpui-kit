@@ -18,6 +18,7 @@ mod checkbox;
 mod collapsible;
 mod color_picker;
 mod combobox;
+pub mod compat;
 pub mod component_traits;
 mod date_picker;
 mod dialog;
@@ -99,6 +100,11 @@ pub use checkbox::{
 pub use collapsible::Collapsible;
 pub use color_picker::{ColorPicker, ColorPickerEvent, ColorPickerState, ColorSwatch, HslaSliders};
 pub use combobox::Combobox;
+pub use compat::{
+    A11yElementExt, AccessibleAction, Anchor, BoundsExt, FlexExt, HitboxExt, OngoingScroll,
+    Orientation, ReduceMotionExt, Role, SpringConfig, SpringState, SpringTarget, Toggled,
+    paint_shaped_line, paint_shaped_line_background,
+};
 pub use component_traits::FocusableExt;
 pub use component_traits::{Disableable, Selectable};
 pub use date_picker::DatePicker;
@@ -168,6 +174,9 @@ pub use selectable_text::SelectableText;
 pub use sheet::Sheet;
 pub use slider::{Slider, SliderIndicator, SliderThumb, SliderTrack};
 pub use state_style::StateStyle;
+// The function and the reflection table it reads are both generated only when
+// the inspector is on, so this re-export carries the same gate. Release builds
+// without the `inspector` feature compile it away.
 #[cfg(any(feature = "inspector", debug_assertions))]
 pub use styled::styled_ext_reflection_methods;
 pub use styled::{RoleOverride, StyledExt, box_shadow, h_flex, v_flex};

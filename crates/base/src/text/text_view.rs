@@ -94,11 +94,13 @@ pub(crate) fn handle_link_click(
     if let Some(handler) = handler {
         handler(&url, &event, window, cx);
     } else if match &event {
+        // WGPUI's click events come from a mouse button or a keyboard
+        // activation; a finger reaches an element as a scroll gesture, which
+        // raises no click, so neither arm has a touch case to answer.
         ClickEvent::Mouse(click) => {
             matches!(click.up.button, MouseButton::Left | MouseButton::Middle)
         }
         ClickEvent::Keyboard(_) => true,
-        ClickEvent::Touch(click) => !click.long_press,
     } {
         cx.open_url(&url);
     }
@@ -666,7 +668,11 @@ impl Element for TextView {
         // overflow also clips descendant hitboxes to the box during prepaint.
         let max_lines_cap = max_lines.map(|max_lines| {
             let mut text_style = window.text_style();
-            text_style.refine(&self.style.text);
+            // WGPUI keeps a style's text refinement as an `Option`, absent
+            // meaning the element says nothing and inherits the window's.
+            if let Some(refinement) = &self.style.text {
+                text_style.refine(refinement);
+            }
             text_style.line_height_in_pixels(window.rem_size()) * max_lines as f32
         });
 
@@ -859,6 +865,7 @@ impl Element for TextView {
 
 #[cfg(test)]
 mod tests {
+    use crate::compat::Anchor;
     use std::sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
@@ -921,7 +928,7 @@ mod tests {
                                     let builds = builds.clone();
                                     Some(crate::text::InlineElement::new(
                                         crate::HoverCard::new("mention-hover")
-                                            .anchor(gpui::Anchor::TopCenter)
+                                            .anchor(Anchor::TopCenter)
                                             .trigger(div().child("@member"))
                                             .content(move |_, _, cx| {
                                                 builds.fetch_add(1, Ordering::Relaxed);
@@ -2900,61 +2907,18 @@ mod tests {
         assert_eq!(selected_text.trim(), "quick");
     }
 
+    // The two tests that used to open with a `gpui::LongPressEvent` are gone
+    // with the gesture. WGPUI has no long press event — which is why the
+    // handlers that consumed one were removed from `text_selection` — so no
+    // simulated event can seed a touch selection that way. A double tap is the
+    // gesture that reaches a word here, and it leaves the same state behind:
+    // the word selected, the handles and the edit menu open. The long press's
+    // drag coverage therefore continues below, seeded by a double tap; the
+    // finger-driven drag it began with, which arrived as long press moves, has
+    // no equivalent and is no longer covered.
     #[gpui::test]
-    fn long_press_selects_word_then_drag_extends_selection(cx: &mut TestAppContext) {
-        struct TouchRoot {
-            text_view: Entity<TextViewState>,
-        }
-        impl Render for TouchRoot {
-            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
-                div()
-                    .w(px(300.))
-                    .child(crate::TextSelectionLayer)
-                    .child(TextView::new(&self.text_view).selectable(true))
-            }
-        }
-        cx.update(crate::init);
-        let (view, cx) = cx.add_window_view(|_, cx| TouchRoot {
-            text_view: cx.new(|cx| TextViewState::markdown("quick select value", cx)),
-        });
-        cx.run_until_parked();
-        cx.update(|window, cx| {
-            let _ = window.draw(cx);
-        });
-        let start_position = point(px(10.), px(16.));
-        cx.simulate_event(gpui::LongPressEvent {
-            phase: gpui::TouchPhase::Started,
-            start_position,
-            position: start_position,
-        });
-        cx.update(|window, cx| {
-            let _ = window.draw(cx);
-        });
-        assert_eq!(
-            view.read_with(cx, |root, cx| root.text_view.read(cx).selected_text())
-                .trim(),
-            "quick"
-        );
-        for phase in [gpui::TouchPhase::Moved, gpui::TouchPhase::Ended] {
-            cx.simulate_event(gpui::LongPressEvent {
-                phase,
-                start_position,
-                position: point(px(220.), px(16.)),
-            });
-        }
-        cx.update(|window, cx| {
-            let _ = window.draw(cx);
-        });
-        assert_eq!(
-            view.read_with(cx, |root, cx| root.text_view.read(cx).selected_text())
-                .trim(),
-            "quick select value"
-        );
-    }
-
-    #[gpui::test]
-    fn long_press_release_keeps_handles_which_drag_the_selection(cx: &mut TestAppContext) {
-        use crate::{SelectionEdge, TextSelection};
+    fn touch_selection_keeps_handles_which_drag_the_selection(cx: &mut TestAppContext) {
+        use crate::{GlobalState, SelectionEdge, TextSelection};
 
         struct TouchRoot {
             text_view: Entity<TextViewState>,
@@ -2984,15 +2948,25 @@ mod tests {
         cx.run_until_parked();
         draw(cx);
 
-        let start_position = point(px(70.), px(16.));
-        for phase in [gpui::TouchPhase::Started, gpui::TouchPhase::Ended] {
-            cx.simulate_event(gpui::LongPressEvent {
-                phase,
-                start_position,
-                position: start_position,
-            });
-            draw(cx);
-        }
+        // A finger goes down, then the tap that selects the word under it.
+        // `note_touch` is what tells the selection the press came from a
+        // finger, which is what keeps the handles and the menu afterwards.
+        let position = point(px(70.), px(16.));
+        cx.update(|_, cx| GlobalState::note_touch(cx));
+        cx.simulate_event(MouseDownEvent {
+            position,
+            modifiers: Modifiers::default(),
+            button: MouseButton::Left,
+            click_count: 2,
+            first_mouse: false,
+        });
+        cx.simulate_event(MouseUpEvent {
+            position,
+            modifiers: Modifiers::default(),
+            button: MouseButton::Left,
+            click_count: 2,
+        });
+        draw(cx);
         assert_eq!(selected(cx), "select");
         let snapshot = cx
             .update(|window, cx| TextSelection::touch_selection(window, cx))

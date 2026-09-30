@@ -106,8 +106,9 @@ impl<T> Line<T> {
         self
     }
 
-    /// Set the 1px border color of the dots on the Line. Defaults to the dot
-    /// fill when it is a solid color.
+    /// Set the 1px border color of the dots on the Line. Without one the dots
+    /// are plain discs of the fill, which is how a border in the fill's own
+    /// color already drew.
     pub fn dot_stroke(mut self, stroke: impl Into<Hsla>) -> Self {
         self.dot_stroke = Some(stroke.into());
         self
@@ -124,15 +125,22 @@ impl<T> Line<T> {
     }
 
     /// Paint the dots on the Line.
+    ///
+    /// The ring is only drawn when the caller asked for one. GPUI used to
+    /// default it to the fill's own colour when that fill was solid, which
+    /// paints the same disc again; WGPUI's `Background` no longer says whether
+    /// it is solid, and dropping the ring instead leaves those dots unchanged.
     fn paint_dot(&self, dot: Point<Pixels>) -> PaintQuad {
+        let (border_width, border_color) = match self.dot_stroke {
+            Some(color) => (px(1.), color),
+            None => (px(0.), Hsla::default()),
+        };
         quad(
             gpui::bounds(dot, size(self.dot_size, self.dot_size)),
             self.dot_size / 2.,
             self.dot_fill,
-            px(1.),
-            self.dot_stroke
-                .or_else(|| self.dot_fill.as_solid())
-                .unwrap_or_default(),
+            border_width,
+            border_color,
             BorderStyle::default(),
         )
     }
@@ -150,7 +158,7 @@ impl<T> Line<T> {
                 let pos = origin_point(px(x), px(y), origin);
 
                 if self.dot {
-                    let dot_radius = self.dot_size.as_f32() / 2.;
+                    let dot_radius = self.dot_size.to_f32() / 2.;
                     let dot_pos = origin_point(px(x - dot_radius), px(y - dot_radius), origin);
                     paint_dots.push(self.paint_dot(dot_pos));
                 }
@@ -230,18 +238,16 @@ impl<T> Line<T> {
         cache: &mut PathCache,
         window: &mut Window,
     ) {
-        let (dots, paint_dots) = self.dots(Point::default());
-        let mut key = ShapeKey::new((self.curve, self.stroke_width.as_f32().to_bits()));
+        let (dots, paint_dots) = self.dots(bounds.origin);
+        let mut key = ShapeKey::new((self.curve, self.stroke_width.to_f32().to_bits()));
         for dot in &dots {
             key.point(*dot);
         }
-        if let Some(path) = cache.get(key.finish(), bounds.origin, || self.build_path(&dots)) {
+        if let Some(path) = cache.get(key.finish(), bounds.origin, |_| self.build_path(&dots)) {
             window.paint_path(path, self.stroke);
         }
-        // Dots are quads: cheap, and positioned at this frame's origin.
+        // Dots are quads: cheap, and already placed by `dots`.
         for dot in paint_dots {
-            let mut dot = dot;
-            dot.bounds.origin = dot.bounds.origin + bounds.origin;
             window.paint_quad(dot);
         }
     }

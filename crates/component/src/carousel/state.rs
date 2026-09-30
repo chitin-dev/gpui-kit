@@ -4,6 +4,7 @@ use gpui::{
     Along, App, Axis, Bounds, Context, EventEmitter, FocusHandle, Focusable, Pixels, Point,
     ScrollHandle, TouchPhase, px,
 };
+use gpui_base::compat::size_as_point;
 
 const POINTER_AXIS_LOCK_THRESHOLD: Pixels = px(2.);
 // Keep this aligned with GPUI's OngoingScroll timeout. Some platforms only
@@ -564,7 +565,7 @@ impl CarouselState {
                     self.ignore_scroll_until_quiet = false;
                     self.invalidate_scroll_settle();
                 }
-                TouchPhase::Ended | TouchPhase::Cancelled => {
+                TouchPhase::Ended => {
                     self.ignore_scroll_until_quiet = false;
                     self.invalidate_scroll_settle();
                     return false;
@@ -1149,7 +1150,7 @@ impl CarouselState {
 
     fn max_snap_offset(&self) -> Pixels {
         let handle_max = self
-            .primary_offset(self.scroll_handle.max_offset())
+            .primary_offset(size_as_point(self.scroll_handle.max_offset()))
             .max(px(0.));
         let Some(viewport) = self.geometry.viewport else {
             return handle_max;
@@ -1252,7 +1253,7 @@ impl CarouselState {
     }
 
     fn clamped_offset(&self, value: Pixels) -> Pixels {
-        let max_offset = self.scroll_handle.max_offset();
+        let max_offset = size_as_point(self.scroll_handle.max_offset());
         let bound = self.primary_offset(max_offset).max(px(0.));
         value.clamp(-bound, px(0.))
     }

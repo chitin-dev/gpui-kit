@@ -1,9 +1,10 @@
+use crate::compat::Anchor;
 use std::rc::Rc;
 
 use gpui::{
-    Anchor, AnyElement, App, Context, ElementId, InteractiveElement as _, IntoElement,
-    ParentElement as _, Render, RenderOnce, Stateful, StatefulInteractiveElement as _, Task,
-    Window, div, prelude::FluentBuilder as _,
+    AnyElement, App, Context, ElementId, InteractiveElement as _, IntoElement, ParentElement as _,
+    Render, RenderOnce, Stateful, StatefulInteractiveElement as _, Task, Window, div,
+    prelude::FluentBuilder as _,
 };
 use instant::Duration;
 

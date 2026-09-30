@@ -76,7 +76,10 @@ impl TableMode {
 
         if self == Self::Nowrap {
             let mut cell = StyleRefinement::default();
-            cell.text.white_space = Some(WhiteSpace::Nowrap);
+            // WGPUI nests the text refinement one level deeper than the GPUI
+            // this example was written against, so the field is reached through
+            // the `Option` rather than off the refinement directly.
+            cell.text.get_or_insert_default().white_space = Some(WhiteSpace::Nowrap);
             style.table_cell(cell)
         } else {
             style

@@ -1,8 +1,9 @@
+use crate::compat::A11yElementExt;
+use crate::compat::{Orientation, Role};
 use gpui::{
     AnyElement, App, Div, ElementId, FocusHandle, InteractiveElement, Interactivity, IntoElement,
-    KeyDownEvent, ParentElement, RenderOnce, Role, SharedString, Stateful,
-    StatefulInteractiveElement, StyleRefinement, Styled, Window, accesskit, div,
-    prelude::FluentBuilder as _,
+    KeyDownEvent, ParentElement, RenderOnce, SharedString, Stateful, StatefulInteractiveElement,
+    StyleRefinement, Styled, Window, div, prelude::FluentBuilder as _,
 };
 use smallvec::SmallVec;
 
@@ -182,7 +183,7 @@ impl RenderOnce for Toolbar {
 
         base.track_focus(&focus_handle)
             .role(Role::Toolbar)
-            .aria_orientation(accesskit::Orientation::Horizontal)
+            .aria_orientation(Orientation::Horizontal)
             .on_key_down(key_handler)
             .children(children)
             .refine_style(&style)
@@ -298,6 +299,8 @@ mod tests {
     #[cfg(test)]
     mod behavior {
         use super::*;
+        use crate::compat::A11yElementExt;
+        use crate::compat::Role;
         use gpui::{
             Context, Element as _, FocusHandle, Render, TestAppContext, VisualTestContext, canvas,
             px,

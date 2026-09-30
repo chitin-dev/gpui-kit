@@ -6,13 +6,15 @@ use crate::scroll::ScrollableElement;
 use crate::{ActiveTheme, ElementExt, Icon, IconName, Sizable as _, h_flex, v_flex};
 use crate::{Side, Size, kbd::Kbd};
 use gpui::{
-    Action, Anchor, AnyElement, App, AppContext, Bounds, Context, DismissEvent, Edges, Entity,
+    Action, AnyElement, App, AppContext, Bounds, Context, DismissEvent, Edges, Entity,
     EventEmitter, FocusHandle, Focusable, InteractiveElement, IntoElement, KeyBinding,
-    ParentElement, Pixels, Render, Role, ScrollHandle, SharedString, StatefulInteractiveElement,
-    Styled, WeakEntity, Window, anchored, deferred, div, prelude::FluentBuilder, px, rems,
+    ParentElement, Pixels, Render, ScrollHandle, SharedString, StatefulInteractiveElement, Styled,
+    WeakEntity, Window, anchored, deferred, div, prelude::FluentBuilder, px, rems,
 };
 use gpui::{ClickEvent, Half, MouseDownEvent, OwnedMenuItem, Point, Subscription};
 use gpui_base::TestSupportExt as _;
+use gpui_base::compat::A11yElementExt;
+use gpui_base::compat::{Anchor, Role};
 
 use std::rc::Rc;
 
@@ -792,18 +794,20 @@ impl PopupMenu {
     {
         for item in items {
             match item.into() {
+                // WGPUI's `OwnedMenuItem` carries no disabled flag — GPUI's app
+                // menu has no disabled state to bridge — so an item taken from
+                // one is always enabled here.
                 OwnedMenuItem::Action {
                     name,
                     action,
                     checked,
-                    disabled,
                     ..
                 } => {
                     self = self.menu_with_check_and_disabled(
                         name,
                         checked,
                         action.boxed_clone(),
-                        disabled,
+                        false,
                     )
                 }
                 OwnedMenuItem::Separator => {
@@ -1387,7 +1391,7 @@ impl PopupMenu {
                             matches!(anchor, Anchor::BottomLeft | Anchor::BottomRight);
                         deferred(
                             anchored()
-                                .anchor(anchor)
+                                .anchor(anchor.to_corner())
                                 .child(
                                     div()
                                         .id("submenu")

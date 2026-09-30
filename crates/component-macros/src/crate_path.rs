@@ -7,21 +7,30 @@ use quote::quote;
 /// `gpui-kit` is preferred because it re-exports GPUI and is the only direct
 /// dependency required by kit consumers. The `gpui-pre` package fallback
 /// preserves standalone `gpui-component` consumers, including dependencies
-/// that rename that package to `gpui` (the conventional name).
+/// that rename that package to `gpui` (the conventional name). `gpui-ce` is
+/// the same fallback for a workspace that depends on the `gpui-ce` package.
+///
+/// The lookup is by package name, not by dependency key, so a consumer that
+/// writes `gpui = { package = "gpui-ce" }` is found through `gpui-ce`, and
+/// [`found_crate_path`] hands back the `gpui` key to expand against.
 pub(crate) fn gpui() -> syn::Result<TokenStream> {
     match crate_name("gpui-kit") {
         Ok(found) => Ok(found_crate_path(found)),
-        Err(kit_error) => crate_name("gpui-pre")
-            .map(found_crate_path)
-            .map_err(|gpui_error| {
-                syn::Error::new(
-                    Span::call_site(),
-                    format!(
-                        "IntoPlot requires a direct dependency on `gpui-kit` or `gpui-pre`: \
-                         gpui-kit lookup failed: {kit_error}; gpui-pre lookup failed: {gpui_error}"
-                    ),
-                )
-            }),
+        Err(kit_error) => match crate_name("gpui-pre") {
+            Ok(found) => Ok(found_crate_path(found)),
+            Err(gpui_pre_error) => crate_name("gpui-ce").map(found_crate_path).map_err(
+                |gpui_ce_error| {
+                    syn::Error::new(
+                        Span::call_site(),
+                        format!(
+                            "IntoPlot requires a direct dependency on `gpui-kit`, `gpui-pre` or \
+                             `gpui-ce`: gpui-kit lookup failed: {kit_error}; gpui-pre lookup \
+                             failed: {gpui_pre_error}; gpui-ce lookup failed: {gpui_ce_error}"
+                        ),
+                    )
+                },
+            ),
+        },
     }
 }
 

@@ -1,5 +1,7 @@
 use gpui::{App, ElementId, Window};
 
+use crate::compat::ReduceMotionExt as _;
+
 use super::{Instant, Interpolate, MotionStatus, Transition, TransitionId};
 
 /// One target of a [`Sequence`] and the transition that reaches it.

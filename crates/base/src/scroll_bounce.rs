@@ -1,10 +1,12 @@
 //! Boundary displacement only: the list keeps its clamped logical position.
 
+use crate::compat::OngoingScroll;
+use crate::compat::ReduceMotionExt as _;
 use crate::{OngoingScrollExt as _, ScrollbarHandle};
 use gpui::{
     AnyElement, App, Bounds, ContentMask, DispatchPhase, Element, ElementId, GlobalElementId,
-    Hitbox, HitboxBehavior, InspectorElementId, IntoElement, LayoutId, OngoingScroll, Pixels,
-    ScrollDelta, ScrollWheelEvent, TouchPhase, Window, point, px,
+    Hitbox, HitboxBehavior, InspectorElementId, IntoElement, LayoutId, Pixels, ScrollDelta,
+    ScrollWheelEvent, TouchPhase, Window, point, px,
 };
 #[cfg(not(target_family = "wasm"))]
 use std::time::Instant;
@@ -291,26 +293,25 @@ impl Element for ScrollBounce {
                 if delta.x.abs() > delta.y.abs() {
                     return;
                 }
-                let ended = matches!(event.touch_phase, TouchPhase::Ended | TouchPhase::Cancelled);
+                // WGPUI's `TouchPhase` carries no `Cancelled`: its platform layer
+                // reports a finger that was lifted or taken away as `Ended`, so
+                // that is the whole of "the gesture is over" here.
+                let ended = matches!(event.touch_phase, TouchPhase::Ended);
                 let mut scrolled = false;
                 let mut changed = false;
                 if phase == DispatchPhase::Capture {
-                    before = handle.offset().y.as_f32();
-                    if event.touch_phase == TouchPhase::Started {
+                    before = handle.offset().y.to_f32();
+                    if matches!(event.touch_phase, TouchPhase::Started) {
                         state.short_drag_distance = (delta.y == px(0.)).then_some(0.);
-                        state.physics.begin(bounds.size.height.as_f32());
+                        state.physics.begin(bounds.size.height.to_f32());
                     } else if let Some(distance) = state.short_drag_distance.as_mut() {
-                        *distance += delta.y.as_f32().abs();
+                        *distance += delta.y.to_f32().abs();
                         if *distance > CATCH_DRAG_SLOP {
                             state.short_drag_distance = None;
                         }
                     }
-                    let suppress_short_drag_momentum = if ended {
-                        state.short_drag_distance.take().is_some()
-                            && event.touch_phase == TouchPhase::Ended
-                    } else {
-                        false
-                    };
+                    let suppress_short_drag_momentum =
+                        ended && state.short_drag_distance.take().is_some();
                     // The current Ended packet may still cross an edge; only
                     // momentum packets after it should be suppressed.
                     allow_end_bounce = suppress_short_drag_momentum;
@@ -320,7 +321,7 @@ impl Element for ScrollBounce {
                         .replace(now)
                         .is_some_and(|at| now.saturating_duration_since(at) >= MOMENTUM_GAP);
                     let reversed = state.suppressed_direction.is_some_and(|direction| {
-                        delta.y != px(0.) && delta.y.as_f32().signum() != direction
+                        delta.y != px(0.) && delta.y.to_f32().signum() != direction
                     });
                     if paused || reversed {
                         state.physics.suppress_momentum = false;
@@ -335,9 +336,9 @@ impl Element for ScrollBounce {
                         // go again, as it would at rest.
                         let from_rest = !state.physics.dragging;
                         if from_rest {
-                            state.physics.begin(bounds.size.height.as_f32());
+                            state.physics.begin(bounds.size.height.to_f32());
                         }
-                        let remainder = state.physics.pull(delta.y.as_f32());
+                        let remainder = state.physics.pull(delta.y.to_f32());
                         if remainder != 0. {
                             let max = max_scroll_extent(handle.as_ref());
                             let mut offset = handle.offset();
@@ -368,8 +369,8 @@ impl Element for ScrollBounce {
                         offset.y = clamped;
                         handle.set_offset(offset);
                     }
-                    let after = offset.y.as_f32();
-                    let requested = delta.y.as_f32();
+                    let after = offset.y.to_f32();
+                    let requested = delta.y.to_f32();
                     // A List can coalesce several packets against one painted
                     // scroll position. Their offset difference alone does not
                     // prove overscroll, especially after direction changes or
@@ -384,7 +385,7 @@ impl Element for ScrollBounce {
                     {
                         let dragging = state.physics.dragging;
                         if !dragging {
-                            state.physics.begin(bounds.size.height.as_f32());
+                            state.physics.begin(bounds.size.height.to_f32());
                         }
                         state.physics.pull(residual);
                         if !dragging || ended {
@@ -650,7 +651,7 @@ mod tests {
             scroll(cx, delta, TouchPhase::Started);
             draw(cx);
             assert_eq!(handle.offset().y, px(end));
-            let stretch = (handle.viewport_bounds().origin.y - origin).as_f32();
+            let stretch = (handle.viewport_bounds().origin.y - origin).to_f32();
             assert_eq!(stretch.signum(), delta.signum());
             // Of the 50 px input, 30 px is ordinary scrolling. Only the
             // remaining 20 px may be rubber-banded (resistance reduces it).

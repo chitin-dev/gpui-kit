@@ -1,4 +1,5 @@
 //! A visual row whose offsets remain in source UTF-8 bytes.
+use crate::compat::{paint_shaped_line, paint_shaped_line_background};
 use gpui::{App, Pixels, Point, ShapedLine, SharedString, TextAlign, Window, point, px};
 use std::ops::Range;
 
@@ -122,11 +123,13 @@ impl InputLine {
         window: &mut Window,
         cx: &mut App,
     ) {
+        // `gpui-ce` dropped the alignment arguments from `ShapedLine::paint`,
+        // so the compat helper folds `align`/`width` into the origin instead.
         let paint = |line: &ShapedLine, pos, align, width, window: &mut Window, cx: &mut App| {
             if background {
-                let _ = line.paint_background(pos, height, align, width, window, cx);
+                let _ = paint_shaped_line_background(line, pos, height, align, width, window, cx);
             } else {
-                let _ = line.paint(pos, height, align, width, window, cx);
+                let _ = paint_shaped_line(line, pos, height, align, width, window, cx);
             }
         };
         match &self.content {

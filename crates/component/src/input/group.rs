@@ -9,11 +9,13 @@
 //! composition and the frame.
 
 use gpui_base::TestSupportExt as _;
+use gpui_base::compat::A11yElementExt;
+use gpui_base::compat::Role;
 
 use gpui::{
-    AnyElement, App, ElementId, InteractiveElement, Interactivity, IntoElement, MouseButton,
-    ParentElement, RenderOnce, Role, SharedString, StatefulInteractiveElement as _,
-    StyleRefinement, Styled, ViewElement, Window, div, prelude::FluentBuilder as _, px, rems,
+    AnyElement, App, ElementId, Entity, InteractiveElement, Interactivity, IntoElement,
+    MouseButton, ParentElement, RenderOnce, SharedString, StyleRefinement, Styled, Window, div,
+    prelude::FluentBuilder as _, px, rems,
 };
 
 use crate::{
@@ -706,8 +708,10 @@ impl RenderOnce for InputGroupText {
 }
 
 fn addon_child(mut child: AnyElement) -> AnyElement {
+    // WGPUI renders an entity as itself rather than through a `ViewElement`
+    // wrapper, so the icon view is the entity that was handed in.
     if button_element::unwrapped_element(&mut child)
-        .downcast_mut::<ViewElement<Icon>>()
+        .downcast_mut::<Entity<Icon>>()
         .is_some()
     {
         // An icon without an explicit size follows the addon's one-rem

@@ -7,6 +7,7 @@ use gpui::{
     ParentElement as _, Pixels, Render, RenderOnce, SharedString, StatefulInteractiveElement as _,
     StyleRefinement, Styled, Subscription, Window, deferred, div, prelude::FluentBuilder as _, px,
 };
+use gpui_base::compat::A11yElementExt as _;
 use rust_i18n::t;
 
 use crate::ThemeStyled as _;

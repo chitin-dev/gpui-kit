@@ -320,9 +320,10 @@ fn is_svg_bytes(bytes: &[u8]) -> bool {
 
 /// Reuse an existing GPUI menu definition as a native menu.
 ///
-/// `Action`s, separators, submenus, `checked`, and `disabled` are mapped over;
-/// system menus (e.g. macOS Services) have no native popup equivalent and are
-/// skipped.
+/// `Action`s, separators, submenus and `checked` are mapped over; system menus
+/// (e.g. macOS Services) have no native popup equivalent and are skipped, and
+/// nothing is disabled, because WGPUI's `Menu` and `MenuItem` have no disabled
+/// state for one to map over.
 impl From<gpui::Menu> for NativeMenu {
     fn from(menu: gpui::Menu) -> Self {
         let mut native = Self::new();
@@ -333,18 +334,17 @@ impl From<gpui::Menu> for NativeMenu {
                     name,
                     action,
                     checked,
-                    disabled,
                     ..
                 } => native.items.push(NativeMenuItem::Item {
                     label: name,
-                    disabled,
+                    disabled: false,
                     checked,
                     icon: None,
                     action: Some(action),
                 }),
                 gpui::MenuItem::Submenu(submenu) => native.items.push(NativeMenuItem::Submenu {
                     label: submenu.name.clone(),
-                    disabled: submenu.disabled,
+                    disabled: false,
                     items: Self::from(submenu).items,
                 }),
                 gpui::MenuItem::SystemMenu(_) => {}

@@ -1,10 +1,12 @@
 use crate::{ActiveTheme, Disableable, StyledExt, h_flex};
 use gpui::{
     AnyElement, App, ClickEvent, ElementId, InteractiveElement, IntoElement, MouseButton,
-    ParentElement, RenderOnce, Role, SharedString, StatefulInteractiveElement as _,
-    StyleRefinement, Styled, Window, prelude::FluentBuilder as _,
+    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement as _, StyleRefinement,
+    Styled, Window, prelude::FluentBuilder as _,
 };
 use gpui_base::TestSupportExt as _;
+use gpui_base::compat::A11yElementExt;
+use gpui_base::compat::Role;
 use smallvec::SmallVec;
 
 #[derive(IntoElement)]
@@ -138,6 +140,7 @@ impl RenderOnce for MenuItemElement {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use gpui_base::compat::A11yElementExt;
 
     #[gpui::test]
     fn aria_label_sets_accessible_name(_cx: &mut gpui::TestAppContext) {

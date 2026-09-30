@@ -95,7 +95,7 @@ impl RenderOnce for CompletionMenuItem {
         let highlights = vec![(
             0..matched_len,
             HighlightStyle {
-                color: Some(cx.theme().blue),
+                color: Some(cx.theme().blue.into()),
                 ..Default::default()
             },
         )];

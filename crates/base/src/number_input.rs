@@ -1,11 +1,13 @@
+use crate::compat::A11yElementExt;
+use crate::compat::Role;
 use crate::input::InputState;
 use std::rc::Rc;
 
 use gpui::Focusable;
 use gpui::{
     AnyElement, App, Entity, EventEmitter, InteractiveElement as _, IntoElement, KeyBinding,
-    ParentElement, RenderOnce, Role, StatefulInteractiveElement as _, StyleRefinement, Styled,
-    Window, actions, div, prelude::FluentBuilder as _,
+    ParentElement, RenderOnce, StyleRefinement, Styled, Window, actions, div,
+    prelude::FluentBuilder as _,
 };
 
 use crate::{Button, InputBase, StyledExt as _};

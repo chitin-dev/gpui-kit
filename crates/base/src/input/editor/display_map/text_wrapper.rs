@@ -1,4 +1,5 @@
 use super::inline_line::InputLine;
+use crate::compat::paint_shaped_line;
 use gpui::Half;
 use std::borrow::Cow;
 use std::ops::Range;
@@ -293,9 +294,11 @@ impl TextWrapper {
         new_text: &Rope,
         cx: &mut App,
     ) {
-        let mut line_wrapper = cx
-            .text_system()
-            .line_wrapper(self.font.clone(), self.font_size);
+        // `gpui-ce`'s line wrapper takes an optional letter spacing, which this
+        // wrapper has never applied, so it is left unset.
+        let mut line_wrapper =
+            cx.text_system()
+                .line_wrapper(self.font.clone(), self.font_size, None);
         let metrics = self.inline_metrics.clone();
         self._update(
             changed_text,
@@ -980,7 +983,17 @@ impl LineLayout {
                     pos.y + *line_index as f32 * line_height,
                 );
 
-                _ = invisible.paint(origin, line_height, text_align, align_width, window, cx);
+                // The whitespace indicators are plain shaped lines, so they need
+                // the compat paint that still honours text alignment.
+                _ = paint_shaped_line(
+                    &invisible,
+                    origin,
+                    line_height,
+                    text_align,
+                    align_width,
+                    window,
+                    cx,
+                );
             }
         }
     }

@@ -5,6 +5,7 @@
 //! visible is here: the tab bar, the toolbar, the ellipsis menu, the dock
 //! collapse affordances, the drop placeholder, and the styled drag preview.
 
+use gpui_base::compat::Anchor;
 use std::{
     cell::{Cell, RefCell},
     collections::HashSet,
@@ -13,11 +14,12 @@ use std::{
 };
 
 use gpui::{
-    Anchor, AnyElement, AnyView, App, AppContext as _, Context, Div, Empty,
-    InteractiveElement as _, IntoElement, ParentElement as _, Render, ScrollHandle, SharedString,
-    Stateful, StatefulInteractiveElement as _, StyleRefinement, Styled as _, Window, div,
+    AnyElement, AnyView, App, AppContext as _, Context, Div, Empty, InteractiveElement as _,
+    IntoElement, ParentElement as _, Render, ScrollHandle, SharedString, Stateful,
+    StatefulInteractiveElement as _, StyleRefinement, Styled as _, Window, div,
     prelude::FluentBuilder as _, px,
 };
+use gpui_base::compat::FlexExt as _;
 use gpui_base::{
     dock::{
         AnyDrag, DockPlacement, DragPanel, DropIndicator, NodeId, PaneNode, PaneRef, PanelId,
@@ -952,7 +954,7 @@ mod tests {
         });
         cx.run_until_parked();
         log.borrow_mut().draggable.clear();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         assert_eq!(
             log.borrow().draggable,
@@ -980,7 +982,7 @@ mod tests {
         });
         cx.run_until_parked();
         log.borrow_mut().draggable.clear();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         assert_eq!(
             log.borrow().draggable,
@@ -1128,7 +1130,7 @@ mod tests {
             area.update(cx, |area, cx| area.set_center(layout, window, cx));
         });
         cx.run_until_parked();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         cx.debug_bounds(ZOOM_CONTROL_SELECTOR).is_some()
     }
 
@@ -1212,7 +1214,7 @@ mod tests {
             });
         });
         cx.run_until_parked();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         let window_height = cx.update(|window, _| window.viewport_size().height);
         assert!(
@@ -1286,8 +1288,8 @@ mod tests {
         cx.run_until_parked();
         let draw = |cx: &mut VisualTestContext| {
             cx.update(|window, _| window.refresh());
-            cx.update(|window, cx| window.draw(cx).clear(cx));
-            cx.update(|window, cx| window.draw(cx).clear(cx));
+            cx.update(|window, cx| window.draw(cx).clear());
+            cx.update(|window, cx| window.draw(cx).clear());
         };
         draw(cx);
 
@@ -1448,7 +1450,7 @@ mod tests {
             area.update(cx, |area, cx| area.set_center(layout, window, cx));
         });
         cx.run_until_parked();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         let window_height = cx.update(|window, _| window.viewport_size().height);
         let content = height.get();
@@ -1565,7 +1567,7 @@ mod tests {
                 area.update(cx, |area, cx| area.set_center(layout, window, cx));
             });
             cx.run_until_parked();
-            cx.update(|window, cx| window.draw(cx).clear(cx));
+            cx.update(|window, cx| window.draw(cx).clear());
             height.get()
         };
 
@@ -1653,7 +1655,7 @@ mod tests {
             area.update(cx, |area, cx| area.set_center(layout, window, cx));
         });
         cx.run_until_parked();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         let button = cx.debug_bounds(CLOSE_BUTTON_SELECTOR);
         if enabled && closable {
             assert_eq!(
@@ -1715,7 +1717,7 @@ mod tests {
         for (visible, expected) in [(false, false), (true, true), (false, false)] {
             cx.update(|_, cx| skin.set_close_button_visible(visible, cx));
             cx.run_until_parked();
-            cx.update(|window, cx| window.draw(cx).clear(cx));
+            cx.update(|window, cx| window.draw(cx).clear());
             assert_eq!(cx.debug_bounds(CLOSE_BUTTON_SELECTOR).is_some(), expected);
         }
     }
@@ -1750,7 +1752,7 @@ mod tests {
             (ids.0, ids.1, activated)
         });
         cx.run_until_parked();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         assert!(
             cx.update(|_, cx| area.read(cx).panel(closable_id).is_some()),
@@ -1807,7 +1809,7 @@ mod tests {
             });
         });
         cx.run_until_parked();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         assert!(
             cx.debug_bounds(CLOSE_BUTTON_SELECTOR).is_some(),
             "an open group with two closable panels offers a close button"
@@ -1821,7 +1823,7 @@ mod tests {
             });
         });
         cx.run_until_parked();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         assert!(
             cx.debug_bounds(CLOSE_BUTTON_SELECTOR).is_none(),
             "a collapsed group must not offer a close button"

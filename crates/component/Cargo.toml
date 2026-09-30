@@ -17,7 +17,7 @@ doctest = false
 [features]
 test-support = ["gpui/test-support", "gpui-base/test-support"]
 decimal = ["gpui-base/decimal"]
-inspector = ["gpui_macros/inspector", "gpui/inspector", "gpui-base/inspector"]
+inspector = ["gpui/inspector", "gpui-base/inspector"]
 tree-sitter = ["dep:tree-sitter", "dep:tree-sitter-json"]
 
 # For syntax highlighting in Markdown and CodeEditor.
@@ -99,7 +99,6 @@ tree-sitter-zig = ["tree-sitter", "dep:tree-sitter-zig"]
 regex = "1"
 anyhow.workspace = true
 gpui = { workspace = true }
-gpui_macros.workspace = true
 gpui-base.workspace = true
 gpui-component-macros = { workspace = true }
 gpui-kit-assets = { workspace = true }

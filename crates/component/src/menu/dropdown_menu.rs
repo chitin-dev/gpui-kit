@@ -1,9 +1,10 @@
+use gpui_base::compat::Anchor;
 use std::rc::Rc;
 
 use gpui::{
-    Anchor, AnyElement, App, Context, DismissEvent, Element, ElementId, Entity, FocusHandle,
-    Focusable, GlobalElementId, InspectorElementId, InteractiveElement, IntoElement, LayoutId,
-    RenderOnce, SharedString, Styled, Window, prelude::FluentBuilder,
+    AnyElement, App, Context, DismissEvent, Element, ElementId, Entity, FocusHandle, Focusable,
+    GlobalElementId, InspectorElementId, InteractiveElement, IntoElement, LayoutId, RenderOnce,
+    SharedString, Styled, Window, prelude::FluentBuilder,
 };
 
 use crate::{Selectable, button::Button, menu::PopupMenu, popover::Popover};
@@ -363,7 +364,7 @@ mod tests {
 
         {
             let (_, cx) = cx.add_window_view(|_, _| MenuProbeRoot { menu: menu.clone() });
-            cx.update(|window, cx| window.draw(cx).clear(cx));
+            cx.update(|window, cx| window.draw(cx).clear());
 
             // Click the trigger; the menu opens and is left open.
             cx.simulate_mouse_down(
@@ -412,7 +413,7 @@ mod tests {
             move |_, _| TestRoot { frames }
         });
         // The popup host captures its trigger bounds on the first frame.
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         let frames_before_open = frames.get();
 
         cx.simulate_mouse_down(

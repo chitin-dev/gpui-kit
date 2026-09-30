@@ -347,9 +347,9 @@ where
     ) -> Option<(ScalePoint<X>, ScaleLinear<Y>, ValueExtent)> {
         let (x_fn, y_fn) = (self.x.as_ref()?, self.y.as_ref()?);
 
-        let width = bounds.size.width.as_f32();
+        let width = bounds.size.width.to_f32();
         let axis_gap = if self.x_axis { AXIS_GAP } else { 0. };
-        let height = bounds.size.height.as_f32() - axis_gap;
+        let height = bounds.size.height.to_f32() - axis_gap;
 
         let len = self.data.len();
         let x = ScalePoint::new(
@@ -386,7 +386,7 @@ where
         // The y labels' gutter is measured before the x scale is laid out past it.
         if let Some((_, _, extent)) = self.scales(bounds) {
             let axis_gap = if self.x_axis { AXIS_GAP } else { 0. };
-            let height = bounds.size.height.as_f32() - axis_gap;
+            let height = bounds.size.height.to_f32() - axis_gap;
             self.axes.measure_y_labels(extent, height, window);
         }
         vec![]
@@ -401,7 +401,7 @@ where
         };
 
         let axis_gap = if self.x_axis { AXIS_GAP } else { 0. };
-        let height = bounds.size.height.as_f32() - axis_gap;
+        let height = bounds.size.height.to_f32() - axis_gap;
 
         // Draw X axis
         // The axis runs under the plot only, clear of a value-axis gutter, so
@@ -504,13 +504,13 @@ where
 
         // Ignore the x-axis label gutter so hovering the labels doesn't show a tooltip.
         let axis_gap = if self.x_axis { AXIS_GAP } else { 0. };
-        if position.y.as_f32() > bounds.size.height.as_f32() - axis_gap
-            || position.x.as_f32() < self.axes.plot_left()
+        if position.y.to_f32() > bounds.size.height.to_f32() - axis_gap
+            || position.x.to_f32() < self.axes.plot_left()
         {
             return None;
         }
 
-        let index = x.nearest_index(position.x.as_f32());
+        let index = x.nearest_index(position.x.to_f32());
         let d = self.data.get(index)?;
         let x_tick = x.tick_at(index)?;
         let y_tick = y.tick(&y_fn(d))?;
@@ -542,7 +542,7 @@ where
             // Confine the crosshair to the plot area so it doesn't cross the x-axis.
             .cross_line(
                 CrossLine::new(state.cross_line)
-                    .height(bounds.size.height.as_f32() - if self.x_axis { AXIS_GAP } else { 0. }),
+                    .height(bounds.size.height.to_f32() - if self.x_axis { AXIS_GAP } else { 0. }),
             )
             .dots(Some(
                 Dot::new(dot)

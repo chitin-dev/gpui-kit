@@ -1,9 +1,11 @@
 use gpui::{
     AnyElement, App, Axis, ClickEvent, Half, InteractiveElement as _, IntoElement, ParentElement,
-    Pixels, RenderOnce, Role, StatefulInteractiveElement as _, StyleRefinement, Styled, Window,
-    div, prelude::FluentBuilder as _, px, relative,
+    Pixels, RenderOnce, StyleRefinement, Styled, Window, div, prelude::FluentBuilder as _, px,
+    relative,
 };
 use gpui_base::TestSupportExt as _;
+use gpui_base::compat::A11yElementExt;
+use gpui_base::compat::Role;
 
 use crate::{
     ActiveTheme as _, AxisExt, Icon, Sizable, Size, StyledExt as _,

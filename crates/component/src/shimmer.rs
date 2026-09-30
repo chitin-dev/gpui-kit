@@ -4,6 +4,7 @@ use gpui::{
     RenderOnce, SharedString, StyleRefinement, Styled, StyledText, TextAlign, Window, WrapBoundary,
     div, point, px, size,
 };
+use gpui_base::compat::{ReduceMotionExt as _, RepeatSyncedExt as _};
 use instant::Duration;
 
 use crate::{ActiveTheme as _, Colorize as _, StyledExt as _};
@@ -87,7 +88,7 @@ impl ShimmerStyle {
             ShimmerSpread::Relative(fraction) if fraction.is_finite() => {
                 self.spread = ShimmerSpread::Relative(fraction.clamp(0.05, 1.));
             }
-            ShimmerSpread::Absolute(length) if length.as_f32().is_finite() => {
+            ShimmerSpread::Absolute(length) if length.to_f32().is_finite() => {
                 self.spread = ShimmerSpread::Absolute(length.max(px(1.)));
             }
             _ => {}
@@ -265,7 +266,7 @@ impl ShimmerGlyphs {
         }
 
         let color = shimmer_highlight_color(
-            window.text_style().color,
+            window.text_style().color.to_hsla(),
             self.background,
             self.foreground,
             self.dark,
@@ -277,7 +278,7 @@ impl ShimmerGlyphs {
         let mut line_origin = bounds.origin;
 
         window.paint_layer(bounds, |window| {
-            for wrapped_line in layout.line_layouts() {
+            for wrapped_line in gpui_base::compat::line_layouts(layout) {
                 let line = &wrapped_line.unwrapped_layout;
                 let baseline_offset = point(
                     px(0.),
@@ -342,7 +343,7 @@ impl ShimmerGlyphs {
                                     run.font_id,
                                     glyph.id,
                                     line.font_size,
-                                    color,
+                                    color.into(),
                                 );
                             });
                         }
@@ -456,7 +457,7 @@ fn shimmer_band_bounds(
     spread: ShimmerSpread,
     layer: usize,
 ) -> Option<Bounds<Pixels>> {
-    let width = bounds.size.width.as_f32();
+    let width = bounds.size.width.to_f32();
 
     if width <= 0. || bounds.size.height <= px(0.) || layer >= SHIMMER_LAYER_COUNT {
         return None;
@@ -464,7 +465,7 @@ fn shimmer_band_bounds(
 
     let half_width = match spread {
         ShimmerSpread::Relative(fraction) => width * fraction,
-        ShimmerSpread::Absolute(length) => length.as_f32(),
+        ShimmerSpread::Absolute(length) => length.to_f32(),
     };
     let padding = half_width / width + 0.05;
     let center = phase.mul_add(1. + padding * 2., -padding) * width;
@@ -626,15 +627,15 @@ mod tests {
         assert_eq!(custom.s, muted.s);
         assert_eq!(custom.l, muted.l);
 
+        // `Animation` keeps only its duration, whether it repeats, and the
+        // easing that carries a synced phase, so repetition is what is left to
+        // assert on.
         let animation = loading_animation(Duration::from_secs(3), false);
         assert_eq!(animation.duration, Duration::from_secs(3));
-        assert!(animation.synced);
         assert!(!animation.oneshot);
-        assert_eq!(animation.max_fps, None);
 
         let animation = loading_animation(Duration::from_secs(3), true);
         assert_eq!(animation.duration, Duration::from_secs(3));
         assert!(animation.oneshot);
-        assert!(!animation.synced);
     }
 }

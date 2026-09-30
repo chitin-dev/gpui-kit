@@ -7,8 +7,8 @@ use std::{
 use gpui::{
     AnyElement, App, AvailableSpace, Bounds, CursorStyle, Element, ElementId, GlobalElementId,
     Hitbox, HitboxBehavior, InspectorElementId, IntoElement, LayoutId, MouseButton, MouseDownEvent,
-    ParentElement, Pixels, Refineable as _, Role, SharedString, Size, Styled, StyledText,
-    TextStyle, Window, div, px, size,
+    ParentElement, Pixels, Refineable as _, SharedString, Size, Styled, StyledText, TextStyle,
+    Window, div, px, size,
 };
 
 use super::{
@@ -82,7 +82,7 @@ impl MeasuredInlineObject {
         if let Some(presentation) = presentation {
             // The wrapper carries inherited marks into both layout and painting.
             let mut wrapper = div().child(presentation.element);
-            wrapper.style().text = style.subtract(&Default::default());
+            wrapper.style().text = Some(style.subtract(&Default::default()));
             let mut element = wrapper.into_any_element();
             let measured = element.layout_as_root(
                 size(AvailableSpace::MaxContent, AvailableSpace::MaxContent),
@@ -152,6 +152,11 @@ impl MeasuredInlineObject {
 pub(super) struct InlineObject {
     id: ElementId,
     text: SharedString,
+    /// The name a caller gave this object for an accessibility client.
+    /// WGPUI publishes no tree, so nothing reads it; it is kept because the
+    /// label is still what the caller states about the object, and the path
+    /// that carries it down from the document mark is the caller's API.
+    #[allow(dead_code)]
     accessibility_label: SharedString,
     object: MeasuredInlineObject,
     selected: Arc<Mutex<bool>>,
@@ -217,15 +222,9 @@ impl Element for InlineObject {
         None
     }
 
-    fn a11y_role(&self) -> Option<Role> {
-        Some(Role::GenericContainer)
-    }
-
-    fn write_a11y_info(&self, node: &mut gpui::accesskit::Node) {
-        node.set_role(Role::GenericContainer);
-        node.set_label(self.accessibility_label.as_ref());
-        node.set_read_only();
-    }
+    // WGPUI publishes no accessibility tree, so there is no `a11y_role` or
+    // `write_a11y_info` to override: the atomic wrapper's role and label were
+    // only ever read from a node this backend never builds.
 
     fn request_layout(
         &mut self,
@@ -460,26 +459,8 @@ mod tests {
         });
     }
 
-    #[test]
-    fn atomic_wrapper_does_not_mislabel_native_controls_as_images() {
-        let mut app = gpui::TestApp::new();
-        let mut window = app.open_window(|_, _| gpui::Empty);
-        window.update(|_, window, cx| {
-            let measured =
-                MeasuredInlineObject::measure("member", None, &TextStyle::default(), window, cx);
-            let object = InlineObject::new(
-                "member",
-                "member".into(),
-                "Member profile".into(),
-                measured,
-                Arc::default(),
-                Bounds::default(),
-                Bounds::default(),
-            );
-            let mut accessible = gpui::accesskit::Node::new(Role::Unknown);
-            object.write_a11y_info(&mut accessible);
-            assert_eq!(accessible.role(), Role::GenericContainer);
-            assert_eq!(accessible.label(), Some("Member profile"));
-        });
-    }
+    // `atomic_wrapper_does_not_mislabel_native_controls_as_images` asserted the
+    // role and label of the accessible node the wrapper wrote. WGPUI has no
+    // accessibility tree and the wrapper writes no node, so there is nothing
+    // left to assert.
 }

@@ -258,9 +258,9 @@ where
         Some(
             ScaleBand::new(
                 self.data.iter().map(|v| x_fn(v)),
-                [0., bounds.size.width.as_f32()],
+                [0., bounds.size.width.to_f32()],
             )
-            .max_band_width(self.max_band_width.as_f32())
+            .max_band_width(self.max_band_width.to_f32())
             .padding_inner(0.4)
             .padding_outer(0.2),
         )
@@ -268,7 +268,7 @@ where
 
     /// The height of the plot area above the x-axis labels.
     fn plot_height(&self, bounds: Bounds<Pixels>) -> f32 {
-        bounds.size.height.as_f32() - if self.x_axis { AXIS_GAP } else { 0. }
+        bounds.size.height.to_f32() - if self.x_axis { AXIS_GAP } else { 0. }
     }
 }
 
@@ -427,11 +427,11 @@ where
         let x = self.x_scale(bounds)?;
 
         // Ignore the x-axis label gutter so hovering the labels doesn't show a tooltip.
-        if position.y.as_f32() > self.plot_height(bounds) {
+        if position.y.to_f32() > self.plot_height(bounds) {
             return None;
         }
 
-        let index = x.nearest_index(position.x.as_f32());
+        let index = x.nearest_index(position.x.to_f32());
         let d = self.data.get(index)?;
         let center = x.tick(&x_fn(d))? + x.band_width() / 2.;
 

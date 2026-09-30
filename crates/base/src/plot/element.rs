@@ -4,8 +4,7 @@ use std::{cell::Cell, rc::Rc};
 
 use gpui::{
     AnyElement, App, Bounds, Element, ElementId, GlobalElementId, Hitbox, HitboxBehavior,
-    InspectorElementId, IntoElement, LayoutId, LongPressEvent, MouseMoveEvent, Pixels, Point, Size,
-    Style, TouchPhase, Window,
+    InspectorElementId, IntoElement, LayoutId, MouseMoveEvent, Pixels, Point, Size, Style, Window,
 };
 
 use super::{Plot, PlotAppear, appear::track_appear, hover::track_hover};
@@ -166,63 +165,35 @@ impl<P: Plot + 'static> Element for PlotElement<P> {
             // every sibling view's cache on each pixel of mouse movement.
             let view = window.current_view();
 
-            if cfg!(any(target_os = "ios", target_os = "android")) {
-                // A finger has no hover: only a long press opens the tooltip, drags
-                // the crosshair, and closes it on lift.
-                window.on_mouse_event(
-                    move |e: &LongPressEvent, phase, window: &mut Window, cx: &mut App| {
-                        if !phase.bubble() {
-                            return;
-                        }
-                        let next = match e.phase {
-                            TouchPhase::Started => {
-                                if window.default_prevented() || !hitbox.is_hovered(window) {
-                                    return;
-                                }
-                                window.prevent_default();
-                                Some(e.start_position - bounds.origin)
-                            }
-                            TouchPhase::Moved => {
-                                if cell.get().is_none() {
-                                    return;
-                                }
-                                Some(e.position - bounds.origin)
-                            }
-                            TouchPhase::Ended | TouchPhase::Cancelled => None,
-                        };
-                        if cell.get() != next {
-                            cell.set(next);
-                            cx.notify(view);
-                        }
-                    },
-                );
-            } else {
-                // Relayout can move the plot under a still cursor without a move
-                // event, so re-derive hover each frame; only a visibility flip needs
-                // a corrective frame.
-                let next = hitbox
-                    .is_hovered(window)
-                    .then(|| window.mouse_position() - bounds.origin);
-                if cell.get() != next {
-                    let visibility_changed = cell.get().is_some() != next.is_some();
-                    cell.set(next);
-                    if visibility_changed {
-                        window.request_animation_frame();
-                    }
+            // A finger used to open the plot's tooltip with a long press, a touch
+            // event WGPUI's `LongPressEvent` no longer exists to deliver; the
+            // pointer path below is what is left.
+            //
+            // Relayout can move the plot under a still cursor without a move
+            // event, so re-derive hover each frame; only a visibility flip needs
+            // a corrective frame.
+            let next = hitbox
+                .is_hovered(window)
+                .then(|| window.mouse_position() - bounds.origin);
+            if cell.get() != next {
+                let visibility_changed = cell.get().is_some() != next.is_some();
+                cell.set(next);
+                if visibility_changed {
+                    window.request_animation_frame();
                 }
-
-                window.on_mouse_event(
-                    move |e: &MouseMoveEvent, _, window: &mut Window, cx: &mut App| {
-                        let next = hitbox
-                            .is_hovered(window)
-                            .then(|| e.position - bounds.origin);
-                        if cell.get() != next {
-                            cell.set(next);
-                            cx.notify(view);
-                        }
-                    },
-                );
             }
+
+            window.on_mouse_event(
+                move |e: &MouseMoveEvent, _, window: &mut Window, cx: &mut App| {
+                    let next = hitbox
+                        .is_hovered(window)
+                        .then(|| e.position - bounds.origin);
+                    if cell.get() != next {
+                        cell.set(next);
+                        cx.notify(view);
+                    }
+                },
+            );
         }
 
         // Crosshair and dots paint above the plot; the deferred box paints above everything.

@@ -362,7 +362,7 @@ where
     /// The resolved outer radius for the given bounds.
     fn resolve_outer_radius(&self, bounds: &Bounds<Pixels>) -> f32 {
         if self.outer_radius.is_zero() {
-            bounds.size.height.as_f32() * 0.4
+            bounds.size.height.to_f32() * 0.4
         } else {
             self.outer_radius
         }
@@ -385,8 +385,8 @@ where
         let direction = point(angle.cos(), angle.sin());
 
         let anchor = point(
-            bounds.size.width.as_f32() / 2. + label_radius * direction.x,
-            bounds.size.height.as_f32() / 2. + label_radius * direction.y,
+            bounds.size.width.to_f32() / 2. + label_radius * direction.x,
+            bounds.size.height.to_f32() / 2. + label_radius * direction.y,
         );
 
         (anchor, direction)
@@ -419,8 +419,8 @@ where
         }
 
         let outer_radius = self.resolve_outer_radius(&bounds);
-        let dx = position.x.as_f32() - bounds.size.width.as_f32() / 2.;
-        let dy = position.y.as_f32() - bounds.size.height.as_f32() / 2.;
+        let dx = position.x.to_f32() - bounds.size.width.to_f32() / 2.;
+        let dy = position.y.to_f32() - bounds.size.height.to_f32() / 2.;
         if dx.hypot(dy) > outer_radius + self.label_gap {
             return None;
         }
@@ -475,8 +475,8 @@ where
                     // the dimension is square-on to it.
                     let origin = bounds.origin
                         + point(
-                            px(anchor.x + (direction.x - 1.) * size.width.as_f32() / 2.),
-                            px(anchor.y + (direction.y - 1.) * size.height.as_f32() / 2.),
+                            px(anchor.x + (direction.x - 1.) * size.width.to_f32() / 2.),
+                            px(anchor.y + (direction.y - 1.) * size.height.to_f32() / 2.),
                         );
 
                     element.prepaint_at(origin, window, cx);
@@ -498,8 +498,8 @@ where
 
         let outer_radius = self.resolve_outer_radius(&bounds);
         let angle_step = TAU / n as f32;
-        let center_x = bounds.size.width.as_f32() / 2.;
-        let center_y = bounds.size.height.as_f32() / 2.;
+        let center_x = bounds.size.width.to_f32() / 2.;
+        let center_y = bounds.size.height.to_f32() / 2.;
         let scale = self.scale(outer_radius);
 
         // Draw grid rings and spokes
@@ -623,8 +623,8 @@ where
 
         let outer_radius = self.resolve_outer_radius(&bounds);
         let scale = self.scale(outer_radius);
-        let center_x = bounds.size.width.as_f32() / 2.;
-        let center_y = bounds.size.height.as_f32() / 2.;
+        let center_x = bounds.size.width.to_f32() / 2.;
+        let center_y = bounds.size.height.to_f32() / 2.;
         let angle = index as f32 * TAU / self.data.len() as f32 - HALF_PI;
 
         // One dot per series at the hovered dimension's vertex.

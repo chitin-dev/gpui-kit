@@ -879,6 +879,7 @@ mod tests {
     use super::*;
     use crate::tab::TabBar;
     use gpui::{Context, Render, TestAppContext, VisualTestContext};
+    use gpui_base::compat::A11yElementExt;
 
     const VARIANTS: [TabVariant; 5] = [
         TabVariant::Tab,

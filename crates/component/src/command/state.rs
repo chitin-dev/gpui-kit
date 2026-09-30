@@ -1,10 +1,12 @@
 use gpui_base::TestSupportExt as _;
+use gpui_base::compat::A11yElementExt;
+use gpui_base::compat::Role;
 use std::rc::Rc;
 
 use gpui::{
     AbsoluteLength, AnyElement, App, AppContext as _, AvailableSpace, Context, Entity, FocusHandle,
     Focusable, FontFallbacks, FontFeatures, FontStyle, FontWeight, InteractiveElement, IntoElement,
-    KeyBinding, Keystroke, ListSizingBehavior, ParentElement, Pixels, Render, Role, ScrollStrategy,
+    KeyBinding, Keystroke, ListSizingBehavior, ParentElement, Pixels, Render, ScrollStrategy,
     SharedString, Size, StatefulInteractiveElement as _, StyleRefinement, Styled, Subscription,
     TextOverflow, WhiteSpace, Window, div, prelude::FluentBuilder as _, px, size,
 };

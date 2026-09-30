@@ -1,7 +1,9 @@
 use crate::TestSupportExt as _;
+use crate::compat::A11yElementExt;
+use crate::compat::Role;
 use gpui::{
     AnyElement, App, Div, ElementId, InteractiveElement, Interactivity, IntoElement, ParentElement,
-    RenderOnce, Role, SharedString, Stateful, StatefulInteractiveElement, StyleRefinement, Styled,
+    RenderOnce, SharedString, Stateful, StatefulInteractiveElement, StyleRefinement, Styled,
     Window, div, prelude::FluentBuilder as _,
 };
 
@@ -333,6 +335,7 @@ impl RenderOnce for TableCaption {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::compat::Role;
     use gpui::{Context, Element as _, Modifiers, Render, TestAppContext, accesskit, point, px};
     use std::{cell::Cell, rc::Rc};
 

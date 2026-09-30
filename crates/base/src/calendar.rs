@@ -1,4 +1,5 @@
 use crate::TestSupportExt as _;
+use crate::compat::A11yElementExt;
 use std::rc::Rc;
 
 use crate::{h_flex, styled::StyledExt as _, v_flex};
@@ -852,6 +853,7 @@ fn days_in_month(year: i32, month: u32, first_day: Weekday) -> Vec<Vec<NaiveDate
 
 #[cfg(test)]
 mod tests {
+    use crate::compat::Role;
     use std::{cell::RefCell, rc::Rc};
 
     use gpui::{AppContext as _, Context, Entity, IntoElement, Render, Subscription, Window};

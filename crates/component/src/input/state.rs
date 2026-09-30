@@ -206,11 +206,6 @@ impl TextInputState {
         ))
     }
 
-    pub(crate) fn replace_all(&self, value: String, window: &mut Window, cx: &mut App) {
-        dispatch!(self, |state| state
-            .update(cx, |state, cx| state.replace_all(value, window, cx)))
-    }
-
     /// The text element itself, as a child to place in the frame.
     pub(crate) fn into_any_element(self) -> gpui::AnyElement {
         use gpui::IntoElement as _;

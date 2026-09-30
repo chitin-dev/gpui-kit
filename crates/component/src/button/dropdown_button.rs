@@ -1,8 +1,9 @@
 use gpui::Corners;
 use gpui::{
-    Anchor, App, Context, Edges, ElementId, InteractiveElement as _, IntoElement, ParentElement,
+    App, Context, Edges, ElementId, InteractiveElement as _, IntoElement, ParentElement,
     RenderOnce, StyleRefinement, Styled, Window, div, prelude::FluentBuilder,
 };
+use gpui_base::compat::Anchor;
 
 use crate::{
     Disableable, Selectable, Sizable, Size, StyledExt as _,
@@ -226,6 +227,7 @@ impl RenderOnce for DropdownButton {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use gpui_base::compat::Anchor;
 
     #[gpui::test]
     fn test_dropdown_button_builder(_cx: &mut gpui::TestAppContext) {

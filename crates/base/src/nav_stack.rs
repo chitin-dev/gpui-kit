@@ -1,5 +1,7 @@
 use std::{rc::Rc, time::Duration};
 
+use crate::compat::ReduceMotionExt as _;
+
 use gpui::{
     AnyElement, AnyView, App, Context, Div, ElementId, Entity, EventEmitter,
     InteractiveElement as _, IntoElement, ParentElement as _, RenderOnce, StyleRefinement, Styled,

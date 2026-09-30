@@ -4,6 +4,7 @@ use gpui::{
     ParentElement, RenderOnce, SharedString, StyleRefinement, Styled, Window, ease_in_out,
     prelude::FluentBuilder, px, relative,
 };
+use gpui_base::compat::ReduceMotionExt as _;
 use gpui_base::{
     Progress as BaseProgress, ProgressIndicator, ProgressTrack, Transition, transition,
 };

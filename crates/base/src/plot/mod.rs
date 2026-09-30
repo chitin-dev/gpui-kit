@@ -253,8 +253,8 @@ where
         .iter()
         .map(|p| {
             point(
-                px(p.x.into() + bounds.origin.x.as_f32()),
-                px(p.y.into() + bounds.origin.y.as_f32()),
+                px(p.x.into() + bounds.origin.x.to_f32()),
+                px(p.y.into() + bounds.origin.y.to_f32()),
             )
         })
         .collect::<Vec<_>>();

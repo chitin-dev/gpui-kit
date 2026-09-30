@@ -2,7 +2,8 @@ use std::{hash::Hash, ops::RangeInclusive, rc::Rc};
 
 use gpui::{
     AnyElement, App, Background, Bounds, Corners, ElementId, Hsla, IntoElement, LinearColorStop,
-    Pixels, Point, SharedString, Size, TextAlign, Window, linear_gradient, point, px,
+    Pixels, Point, SharedString, Size, TextAlign, Window, gradient_color_stop, linear_gradient,
+    point, px,
 };
 use gpui_component_macros::IntoPlot;
 
@@ -482,9 +483,9 @@ where
     fn band_scale(&self, bounds: Bounds<Pixels>) -> Option<ScaleBand<B>> {
         let band_fn = self.band.as_ref()?;
         let band_extent = if self.alignment.is_horizontal() {
-            bounds.size.height.as_f32()
+            bounds.size.height.to_f32()
         } else {
-            bounds.size.width.as_f32()
+            bounds.size.width.to_f32()
         };
         // Value-axis labels eat into the band extent at one end; `band_offset`
         // shifts the bands away from that end when it is the leading one.
@@ -492,7 +493,7 @@ where
         Some(
             ScaleBand::new(self.data.iter().map(|v| band_fn(v)), [0., extent])
                 .band_count(self.band_count.unwrap_or(0))
-                .max_band_width(self.max_band_width.as_f32())
+                .max_band_width(self.max_band_width.to_f32())
                 .padding_inner(self.padding_inner)
                 .padding_outer(self.padding_outer),
         )
@@ -518,9 +519,9 @@ where
     fn value_scale(&self, bounds: Bounds<Pixels>) -> Option<(ScaleLinear<V>, f32, f32)> {
         let value_fn = self.value.as_ref()?;
         let value_dim = if self.alignment.is_horizontal() {
-            bounds.size.width.as_f32()
+            bounds.size.width.to_f32()
         } else {
-            bounds.size.height.as_f32()
+            bounds.size.height.to_f32()
         };
         let axis_gap = if self.label_axis { AXIS_GAP } else { 0. };
         // For horizontal charts the band labels (category names) are rendered
@@ -554,7 +555,15 @@ where
         Some((scale, baseline, far))
     }
 
-    /// The frame `paint` gives datum `d`'s bar, the one `fill` receives.
+    /// The frame a bar for datum `d` occupies, derived from the value scale and
+    /// the band.
+    ///
+    /// The render path builds the same frame through `Bar`'s own callbacks, so
+    /// nothing in the library calls this: it is the geometry the tests pin. The
+    /// tooltip used to compare its swatch against it, which is what stopped once
+    /// [`Self::bar_color`] could no longer read a colour back out of the
+    /// `Background` a `fill` produces.
+    #[cfg(test)]
     fn bar_frame(
         &self,
         d: &T,
@@ -603,31 +612,24 @@ where
         lo..=hi
     }
 
-    /// The color a tooltip row shows for datum `d`: its bar's, the first stop
-    /// of a gradient, or the default fill when `fill` returns a gradient,
-    /// whose stops can't be read back. `frame` is the bar's, as `paint` lays it
-    /// out.
-    fn bar_color(&self, d: &T, frame: Bounds<f32>, bounds: Bounds<Pixels>, cx: &App) -> Hsla {
+    /// The color a tooltip row shows for datum `d`: the first stop of a
+    /// `fill_gradient`, or the default fill.
+    ///
+    /// A bar coloured by `fill` shows the default swatch: WGPUI's `Background`
+    /// keeps its variant in private fields, so unlike the `as_solid` this used
+    /// to read, a solid colour cannot be recovered from one.
+    fn bar_color(&self, d: &T, cx: &App) -> Hsla {
         let default = cx.theme().chart_2;
-        if let Some(fill) = self.fill_gradient.as_ref() {
-            let value = self
-                .value
-                .as_ref()
-                .and_then(|value_fn| value_fn(d).to_f32())
-                .unwrap_or(0.);
-            let [first, _] = bar_gradient(fill.as_ref(), d, value, self.gradient_range());
-            return first.color;
-        }
-        let Some(fill) = self.fill.as_ref() else {
+        let Some(fill) = self.fill_gradient.as_ref() else {
             return default;
         };
-        let chart_bounds = Bounds {
-            origin: Point::new(0., 0.),
-            size: Size::new(bounds.size.width.as_f32(), bounds.size.height.as_f32()),
-        };
-        fill(d, frame, chart_bounds, self.alignment)
-            .as_solid()
-            .unwrap_or(default)
+        let value = self
+            .value
+            .as_ref()
+            .and_then(|value_fn| value_fn(d).to_f32())
+            .unwrap_or(0.);
+        let [first, _] = bar_gradient(fill.as_ref(), d, value, self.gradient_range());
+        first.color
     }
 
     /// The gutter the value-axis labels take along the band axis: none unless
@@ -710,7 +712,7 @@ where
     fn value_extent(&self, bounds: Bounds<Pixels>) -> (f32, f32) {
         if self.alignment.is_horizontal() {
             let (band_gap, value_end_gap) = self.horizontal_gaps;
-            let length = (bounds.size.width.as_f32() - band_gap - value_end_gap).max(0.);
+            let length = (bounds.size.width.to_f32() - band_gap - value_end_gap).max(0.);
             let start = if matches!(self.alignment, BarAlignment::Left) {
                 band_gap
             } else {
@@ -719,7 +721,7 @@ where
             (start, length)
         } else {
             let axis_gap = if self.label_axis { AXIS_GAP } else { 0. };
-            let length = bounds.size.height.as_f32() - axis_gap;
+            let length = bounds.size.height.to_f32() - axis_gap;
             let start = if matches!(self.alignment, BarAlignment::Top) {
                 axis_gap
             } else {
@@ -733,12 +735,12 @@ where
     fn is_over_bars(&self, position: Point<Pixels>, bounds: Bounds<Pixels>) -> bool {
         let (start, length) = self.value_extent(bounds);
         if self.alignment.is_horizontal() {
-            let value_labels_top = bounds.size.height.as_f32() - VALUE_AXIS_GAP;
-            (start..=start + length).contains(&position.x.as_f32())
-                && !(self.value_axis_gap() > 0. && position.y.as_f32() > value_labels_top)
+            let value_labels_top = bounds.size.height.to_f32() - VALUE_AXIS_GAP;
+            (start..=start + length).contains(&position.x.to_f32())
+                && !(self.value_axis_gap() > 0. && position.y.to_f32() > value_labels_top)
         } else {
-            (start..=start + length).contains(&position.y.as_f32())
-                && position.x.as_f32() >= self.band_offset()
+            (start..=start + length).contains(&position.y.to_f32())
+                && position.x.to_f32() >= self.band_offset()
         }
     }
 }
@@ -770,8 +772,8 @@ where
             return;
         };
 
-        let total_width = bounds.size.width.as_f32();
-        let total_height = bounds.size.height.as_f32();
+        let total_width = bounds.size.width.to_f32();
+        let total_height = bounds.size.height.to_f32();
         let alignment = self.alignment;
         let is_horizontal = alignment.is_horizontal();
 
@@ -1012,7 +1014,13 @@ where
                 bar.fill(move |d, frame, alignment| {
                     let v = value_fn_for_grad(d).to_f32().unwrap_or(0.);
                     let [s0, s1] = bar_gradient(fg.as_ref(), d, v, chart_range.clone());
-                    let bg: Background = linear_gradient(alignment.gradient_angle(), s0, s1);
+                    // `fill` speaks text-gradient stops, but a bar is painted
+                    // with a background gradient, which takes `GradientStop`.
+                    let bg: Background = linear_gradient(
+                        alignment.gradient_angle(),
+                        gradient_color_stop(s0.color, s0.percentage),
+                        gradient_color_stop(s1.color, s1.percentage),
+                    );
                     bg.opacity(emphasis(frame))
                 })
             }
@@ -1087,7 +1095,7 @@ where
         } else {
             position.x
         };
-        let index = band_scale.nearest_index(cursor_band.as_f32() - band_offset);
+        let index = band_scale.nearest_index(cursor_band.to_f32() - band_offset);
         let d = self.data.get(index)?;
         let center = band_scale.tick(&band_fn(d))? + band_offset + band_width / 2.;
 
@@ -1113,7 +1121,7 @@ where
             };
             let center = hover.glide(("bar-chart", "band"), target, window, cx);
             BarHover {
-                center: center.as_f32(),
+                center: center.to_f32(),
                 focus: hover.progress(),
             }
         });
@@ -1155,8 +1163,7 @@ where
                 .band(px(band_width))
         };
 
-        let frame = self.bar_frame(d, &band_scale, bounds).unwrap_or_default();
-        let swatch = self.bar_color(d, frame, bounds, cx);
+        let swatch = self.bar_color(d, cx);
 
         // Follow the cursor; `hover` already glides the band.
         let tooltip = Tooltip::new(cursor, bounds.size)
@@ -1419,8 +1426,9 @@ mod tests {
         assert_eq!(inside.value_axis_gap(), 0.);
     }
 
-    /// A tooltip row shows its bar's color: a solid fill as is, a
-    /// `fill_gradient` by its first stop, and the default fill otherwise.
+    /// A tooltip row shows a `fill_gradient` by its first stop, and the
+    /// default fill for every bar whose colour could not be read back — an
+    /// unfilled one, and any coloured through `fill`.
     #[gpui::test]
     fn the_tooltip_swatch_follows_the_bar_color(cx: &mut gpui::TestAppContext) {
         cx.update(crate::init);
@@ -1429,15 +1437,13 @@ mod tests {
                 .band(|d: &f64| SharedString::from(format!("{d}")))
                 .value(|d: &f64| *d)
         };
-        let frame = Bounds::default();
-        let bounds = Bounds::new(point(px(0.), px(0.)), gpui::size(px(100.), px(100.)));
         let (default, solid, gradient, stops) = cx.update(|cx| {
             let gain = gpui::green();
             let loss = gpui::red();
-            let default = bars().bar_color(&1., frame, bounds, cx);
+            let default = bars().bar_color(&1., cx);
             let solid = bars()
                 .fill(move |d: &f64, _, _, _| if *d >= 0. { gain } else { loss })
-                .bar_color(&-2., frame, bounds, cx);
+                .bar_color(&-2., cx);
             let gradient = bars()
                 .fill(move |_: &f64, _, _, _| {
                     linear_gradient(
@@ -1446,7 +1452,7 @@ mod tests {
                         gpui::linear_color_stop(loss, 1.),
                     )
                 })
-                .bar_color(&1., frame, bounds, cx);
+                .bar_color(&1., cx);
             let stops = bars()
                 .fill_gradient(move |_: &f64, _, _| {
                     [
@@ -1454,21 +1460,21 @@ mod tests {
                         gpui::linear_color_stop(loss, 1.),
                     ]
                 })
-                .bar_color(&1., frame, bounds, cx);
+                .bar_color(&1., cx);
             (default, solid, gradient, stops)
         });
         let chart_2 = cx.update(|cx| cx.theme().chart_2);
 
         assert_eq!(default, chart_2);
-        assert_eq!(solid, gpui::red());
+        assert_eq!(solid, chart_2);
         assert_eq!(gradient, chart_2);
         assert_eq!(stops, gpui::green());
     }
 
-    /// The tooltip reads each bar's frame as `paint` lays it out, so a `fill`
-    /// that reads the frame colors the swatch as it colors the bar.
+    /// A bar's frame is laid out from the value scale: the shape `paint` draws
+    /// and a `fill` reads.
     #[test]
-    fn the_tooltip_reads_the_painted_bar_frame() {
+    fn a_bar_frame_grows_from_the_value_scale() {
         let bars = BarChart::new([1., -2.])
             .band(|d: &f64| SharedString::from(format!("{d}")))
             .value(|d: &f64| *d);

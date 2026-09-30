@@ -1,8 +1,10 @@
+use crate::compat::A11yElementExt;
+use crate::compat::Role;
 use crate::{StateStyle, StyledExt as _, TestSupportExt as _};
 use gpui::{
     AnyElement, App, Div, ElementId, InteractiveElement, Interactivity, IntoElement, ParentElement,
-    Refineable as _, RenderOnce, Role, SharedString, StatefulInteractiveElement, StyleRefinement,
-    Styled, Window, div, prelude::FluentBuilder as _,
+    Refineable as _, RenderOnce, SharedString, StatefulInteractiveElement, StyleRefinement, Styled,
+    Window, div, prelude::FluentBuilder as _,
 };
 
 /// What the input can offer to its context menu, at the moment it is opened.

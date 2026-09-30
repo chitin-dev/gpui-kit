@@ -29,10 +29,13 @@ fn shape_label(
     let text_run = TextRun {
         len: text.len(),
         font: window.text_style().font(),
-        color,
+        color: color.into(),
         background_color: None,
         underline: None,
         strikethrough: None,
+        // Labels are shaped with whatever letter spacing the window's text
+        // style carries; `font()` above only says which face to use.
+        letter_spacing: None,
     };
     window
         .text_system()
@@ -57,8 +60,8 @@ pub fn measure_text_width(text: &SharedString, font_size: Pixels, window: &mut W
         },
         window,
     )
-    .width()
-    .as_f32()
+    .width
+    .to_f32()
 }
 
 /// Truncate `text` with a trailing ellipsis so it fits within `max_width` at
@@ -180,12 +183,14 @@ impl PlotLabel {
             let origin = origin_point(origin.x, origin.y, bounds.origin);
 
             let line = shape_label(text, *font_size, *color, window);
+            // A label's origin is its anchor, not the left edge of a box, so the
+            // line is moved here and painted left-aligned from there.
             let origin = match align {
                 TextAlign::Left => origin,
-                TextAlign::Right => origin - point(line.width(), px(0.)),
-                _ => origin - point(line.width() / 2., px(0.)),
+                TextAlign::Right => origin - point(line.width, px(0.)),
+                _ => origin - point(line.width / 2., px(0.)),
             };
-            let _ = line.paint(origin, *font_size, *align, None, window, cx);
+            let _ = crate::paint_shaped_line(&line, origin, *font_size, *align, None, window, cx);
         }
     }
 }

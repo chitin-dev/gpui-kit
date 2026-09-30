@@ -80,7 +80,9 @@ pub trait Panel: gpui_base::dock::Panel {
     /// The panel's title, as an element rather than a string so a panel can
     /// draw an icon, a badge, or a styled fragment in the tab.
     fn title(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        t!("Dock.Unnamed")
+        // A translated string is a `Cow`, which WGPUI draws from neither; an
+        // owned string is what its text element takes.
+        t!("Dock.Unnamed").to_string()
     }
 
     /// Colors for the title, for a panel that wants its tab to stand out.
@@ -475,7 +477,7 @@ mod tests {
         });
         cx.run_until_parked();
         recovered.borrow_mut().tab_names.clear();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         assert_eq!(
             recovered.borrow().tab_names,
@@ -523,7 +525,7 @@ mod tests {
         cx.update(|window, cx| area.update(cx, |area, cx| area.load(state, window, cx).unwrap()));
         cx.run_until_parked();
         recovered.borrow_mut().tab_names.clear();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         assert_eq!(
             recovered.borrow().tab_names,
@@ -555,7 +557,7 @@ mod tests {
         });
         cx.run_until_parked();
         recovered.borrow_mut().tab_names.clear();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         assert_eq!(
             recovered.borrow().tab_names,

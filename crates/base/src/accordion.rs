@@ -1,10 +1,12 @@
 use crate::TestSupportExt as _;
+use crate::compat::A11yElementExt;
+use crate::compat::Role;
 use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ClickEvent, Div, ElementId, InteractiveElement, Interactivity, IntoElement,
-    ParentElement, RenderOnce, Role, StatefulInteractiveElement, StyleRefinement, Styled, Window,
-    div, prelude::FluentBuilder as _,
+    ParentElement, RenderOnce, StatefulInteractiveElement, StyleRefinement, Styled, Window, div,
+    prelude::FluentBuilder as _,
 };
 use smallvec::SmallVec;
 
@@ -362,11 +364,12 @@ impl RenderOnce for AccordionTrigger {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::compat::A11yElementExt;
+    use crate::compat::Role;
     use std::{cell::RefCell, rc::Rc};
 
     use gpui::{
-        Context, Element as _, Modifiers, Render, Role, VisualTestContext, accesskit, canvas,
-        point, px,
+        Context, Element as _, Modifiers, Render, VisualTestContext, accesskit, canvas, point, px,
     };
 
     #[gpui::test]

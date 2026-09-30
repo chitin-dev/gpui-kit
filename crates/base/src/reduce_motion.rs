@@ -1,11 +1,11 @@
 //! Honors the operating system's reduced-motion preference.
 //!
 //! Every Base transition, spring, presence and reveal consults
-//! [`App::reduce_motion`], but GPUI never reads the platform's setting into
-//! that flag: it stays `false` until something sets it. [`init`] reads the
-//! setting when Base initializes and writes it into the flag, so an
-//! application inherits the user's choice by calling `gpui_base::init` or
-//! `gpui_component::init`.
+//! [`ReduceMotionExt::reduce_motion`], the flag WGPUI does not carry (see
+//! [`crate::compat`]). WGPUI never reads the platform's setting into it, so it
+//! stays `false` until something sets it. [`init`] reads the setting when Base
+//! initializes and writes it into the flag, so an application inherits the
+//! user's choice by calling `gpui_base::init` or `gpui_component::init`.
 //!
 //! The setting is read on the platforms below; everywhere else the flag is
 //! left alone.
@@ -22,20 +22,21 @@
 //!   following the portal's change signal for the life of the application.
 //!
 //! An application owns the flag once it sets it. Base writes the
-//! flag only while it still holds what Base last wrote (or GPUI's initial
-//! `false`), so an application that calls [`App::set_reduce_motion`] after
-//! `init` is never overridden by a later reading, and one that wants to follow
-//! the system again calls [`apply_system_reduce_motion`].
+//! flag only while it still holds what Base last wrote (or the flag's initial
+//! `false`), so an application that calls [`ReduceMotionExt::set_reduce_motion`]
+//! after `init` is never overridden by a later reading, and one that wants to
+//! follow the system again calls [`apply_system_reduce_motion`].
 //!
 //! Under GPUI's test scheduler the platform is never consulted, whichever
 //! crate's tests are running: a probe that answers from another thread would
 //! break the scheduler's determinism, and a test wanting reduced motion sets
 //! the flag itself.
 
+use crate::compat::ReduceMotionExt;
 use gpui::{App, Global};
 
-/// What Base last wrote into [`App::set_reduce_motion`], and whether it is
-/// already listening for the platform to change its mind.
+/// What Base last wrote into [`ReduceMotionExt::set_reduce_motion`], and whether
+/// it is already listening for the platform to change its mind.
 #[derive(Default)]
 struct SystemReduceMotion {
     applied: Option<bool>,
@@ -50,7 +51,7 @@ pub(crate) fn init(cx: &mut App) {
 }
 
 /// Reads the operating system's reduced-motion preference into
-/// [`App::set_reduce_motion`].
+/// [`ReduceMotionExt::set_reduce_motion`].
 ///
 /// `gpui_base::init` calls this once. Call it again to re-read the preference
 /// on a platform Base does not follow live — macOS and Windows post no
@@ -76,12 +77,26 @@ pub fn apply_system_reduce_motion(cx: &mut App) {
 
 /// Whether the application runs on GPUI's deterministic test scheduler,
 /// which must not be woken by a platform answering from its own thread.
+///
+/// WGPUI publishes no query for this, so the answer is read off the background
+/// executor's dispatcher: its `dispatcher` field and its `as_test` method are
+/// public but undocumented, and the method exists only when GPUI carries
+/// `test-support` — which is when a test scheduler exists at all. Both ways of
+/// reaching that build are covered, so a build that asks this question always
+/// gets a real answer: Base's own tests, where the target turns it on, and a
+/// dependent crate's, where Base's `test-support` feature does (see
+/// `gpui-component`, whose own feature enables it). Anywhere else there is no
+/// test scheduler to be running on, and the answer is `false`.
 fn is_test_scheduler(cx: &App) -> bool {
-    cx.background_executor()
-        .scheduler_executor()
-        .scheduler()
-        .as_test()
-        .is_some()
+    #[cfg(any(test, feature = "test-support"))]
+    {
+        cx.background_executor().dispatcher.as_test().is_some()
+    }
+    #[cfg(not(any(test, feature = "test-support")))]
+    {
+        let _ = cx;
+        false
+    }
 }
 
 /// Writes one reading of the system preference into the flag, unless the
@@ -187,6 +202,7 @@ mod tests {
     use gpui::TestAppContext;
 
     use super::{apply_preference, apply_system_reduce_motion};
+    use crate::compat::ReduceMotionExt as _;
 
     #[gpui::test]
     fn a_system_preference_for_reduced_motion_sets_the_flag(cx: &mut TestAppContext) {

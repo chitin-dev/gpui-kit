@@ -144,13 +144,21 @@ macro_rules! content_from_text {
         })*
     };
 }
+// `gpui-ce`'s `SharedString` has every `From` impl gpui-pre had except
+// `From<char>`, so that one case is spelled out here instead of going through
+// the macro.
+impl From<char> for InputContent {
+    fn from(text: char) -> Self {
+        Self::new(text.to_string())
+    }
+}
+
 // Every text type `set_value` accepted before it took content.
 content_from_text!(
     &str,
     &mut str,
     &String,
     String,
-    char,
     Box<str>,
     std::sync::Arc<str>,
     &std::sync::Arc<str>,

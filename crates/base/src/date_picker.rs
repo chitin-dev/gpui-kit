@@ -1,10 +1,11 @@
 use crate::TestSupportExt as _;
+use crate::compat::A11yElementExt;
+use crate::compat::Role;
 use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, Div, ElementId, FocusHandle, InteractiveElement, Interactivity, IntoElement,
-    ParentElement, RenderOnce, Role, StatefulInteractiveElement, StyleRefinement, Styled, Window,
-    div,
+    ParentElement, RenderOnce, StatefulInteractiveElement, StyleRefinement, Styled, Window, div,
 };
 
 use crate::{

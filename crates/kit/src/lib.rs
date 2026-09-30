@@ -106,11 +106,21 @@ pub use crate as gpui;
 pub mod test;
 
 pub use ::gpui_base as base;
-#[cfg(not(any(target_os = "ios", target_os = "android")))]
-pub use ::gpui_platform as platform;
-#[cfg(target_family = "wasm")]
-pub use ::gpui_web as web;
 pub use gpui_base::is_mobile;
+
+/// The platform layer. WGPUI folds what upstream splits into `gpui_platform`
+/// and `gpui_web` into the one `gpui` crate, so this module is GPUI itself —
+/// `gpui_kit::platform::Application` is `gpui::Application`. The name is kept
+/// so application code that reaches for a platform item keeps working.
+pub mod platform {
+    pub use ::gpui::*;
+}
+
+/// True on the targets upstream served with `gpui_web`. WGPUI has no wasm
+/// backend, so this is always false here.
+pub const fn is_web() -> bool {
+    cfg!(target_family = "wasm")
+}
 
 /// The styled component library.
 ///
@@ -163,9 +173,14 @@ pub fn open_window<V: Render>(
     ))
 }
 
-// Mobile applications provide their platform with `Application::with_platform`.
-#[cfg(not(any(target_os = "ios", target_os = "android")))]
-pub use ::gpui_platform::application;
+/// Builds the application to run.
+///
+/// Upstream reached a per-platform crate for this; WGPUI has one backend, so it
+/// is GPUI's own windowed constructor. Mobile applications still supply their
+/// own backend through `Application::with_platform`.
+pub fn application() -> Application {
+    Application::new()
+}
 
 /// Initializes every enabled layer. Call it once, before using anything else.
 ///

@@ -1,10 +1,12 @@
+use crate::compat::A11yElementExt;
+use crate::compat::{Role, Toggled};
 use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ClickEvent, Div, ElementId, FocusHandle, InteractiveElement, Interactivity,
-    IntoElement, MouseButton, ParentElement, Refineable as _, RenderOnce, Role, SharedString,
-    Stateful, StatefulInteractiveElement, StyleRefinement, Styled, Toggled, Window, div,
-    prelude::FluentBuilder as _, relative,
+    IntoElement, MouseButton, ParentElement, Refineable as _, RenderOnce, SharedString, Stateful,
+    StatefulInteractiveElement, StyleRefinement, Styled, Window, div, prelude::FluentBuilder as _,
+    relative,
 };
 use smallvec::SmallVec;
 
@@ -215,6 +217,8 @@ impl RenderOnce for Toggle {
 mod tests {
     use super::*;
     use crate::ElementExt as _;
+    use crate::compat::A11yElementExt;
+    use crate::compat::{Role, Toggled};
     use std::{
         cell::{Cell, RefCell},
         rc::Rc,

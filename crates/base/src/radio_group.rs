@@ -1,7 +1,9 @@
+use crate::compat::A11yElementExt;
+use crate::compat::{Orientation, Role};
 use gpui::{
     AnyElement, App, Axis, Div, ElementId, InteractiveElement, Interactivity, IntoElement,
-    ParentElement, RenderOnce, Role, Stateful, StatefulInteractiveElement, StyleRefinement, Styled,
-    Window, accesskit, div,
+    ParentElement, RenderOnce, Stateful, StatefulInteractiveElement, StyleRefinement, Styled,
+    Window, div,
 };
 use smallvec::SmallVec;
 
@@ -58,8 +60,8 @@ impl RenderOnce for RadioGroup {
         self.base
             .role(Role::RadioGroup)
             .aria_orientation(match self.axis {
-                Axis::Horizontal => accesskit::Orientation::Horizontal,
-                Axis::Vertical => accesskit::Orientation::Vertical,
+                Axis::Horizontal => Orientation::Horizontal,
+                Axis::Vertical => Orientation::Vertical,
             })
             .children(self.children)
             .refine_style(&self.style)

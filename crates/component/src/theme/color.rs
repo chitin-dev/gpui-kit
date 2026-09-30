@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Display};
 
 use gpui::{
-    Background, Hsla, LinearColorStop, SharedString, hsla, linear_color_stop, linear_gradient,
+    Background, GradientStop, Hsla, SharedString, gradient_color_stop, hsla, linear_gradient,
 };
 use serde::{Deserialize, Deserializer, de::Error as _};
 
@@ -780,8 +780,8 @@ pub(crate) fn try_parse_background_clamped(background: &str, max: f32) -> Result
     }
 
     let gradient = parse_linear_gradient(background)?;
-    let clamp = |stop: LinearColorStop| {
-        linear_color_stop(stop.color.alpha(stop.color.a.min(max)), stop.percentage)
+    let clamp = |stop: GradientStop| {
+        gradient_color_stop(stop.color.alpha(stop.color.a.min(max)), stop.position)
     };
     Ok(linear_gradient(
         gradient.angle,
@@ -800,8 +800,8 @@ pub(crate) fn try_parse_theme_color(color: &str) -> Result<Hsla> {
 
 struct ParsedLinearGradient {
     angle: f32,
-    from: LinearColorStop,
-    to: LinearColorStop,
+    from: GradientStop,
+    to: GradientStop,
 }
 
 fn parse_linear_gradient(background: &str) -> Result<ParsedLinearGradient> {
@@ -905,7 +905,7 @@ fn parse_linear_gradient_direction(direction: &str) -> Result<f32> {
     }
 }
 
-fn parse_linear_color_stop(stop: &str, default_percentage: f32) -> Result<LinearColorStop> {
+fn parse_linear_color_stop(stop: &str, default_percentage: f32) -> Result<GradientStop> {
     let stop = stop.trim();
     let mut parts = stop.split_whitespace().collect::<Vec<_>>();
     let percentage = parts
@@ -924,7 +924,7 @@ fn parse_linear_color_stop(stop: &str, default_percentage: f32) -> Result<Linear
         return Err(anyhow!("Expected color in linear-gradient color stop"));
     }
 
-    Ok(linear_color_stop(
+    Ok(gradient_color_stop(
         try_parse_color(&color)?,
         percentage.clamp(0., 1.),
     ))

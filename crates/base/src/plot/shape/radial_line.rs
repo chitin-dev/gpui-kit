@@ -139,8 +139,9 @@ impl<T> RadialLine<T> {
         self
     }
 
-    /// Set the 1px border color of the dots on the RadialLine. Defaults to the
-    /// dot fill when it is a solid color.
+    /// Set the 1px border color of the dots on the RadialLine. Without one the
+    /// dots are plain discs of the fill, which is how a border in the fill's
+    /// own color already drew.
     pub fn dot_stroke(mut self, stroke: impl Into<Hsla>) -> Self {
         self.dot_stroke = Some(stroke.into());
         self
@@ -157,23 +158,30 @@ impl<T> RadialLine<T> {
     }
 
     /// Paint a dot on the RadialLine.
+    ///
+    /// The ring is only drawn when the caller asked for one. GPUI used to
+    /// default it to the fill's own colour when that fill was solid, which
+    /// paints the same disc again; WGPUI's `Background` no longer says whether
+    /// it is solid, and dropping the ring instead leaves those dots unchanged.
     fn paint_dot(&self, dot: Point<Pixels>) -> PaintQuad {
+        let (border_width, border_color) = match self.dot_stroke {
+            Some(color) => (px(1.), color),
+            None => (px(0.), Hsla::default()),
+        };
         quad(
             gpui::bounds(dot, size(self.dot_size, self.dot_size)),
             self.dot_size / 2.,
             self.dot_fill,
-            px(1.),
-            self.dot_stroke
-                .or_else(|| self.dot_fill.as_solid())
-                .unwrap_or_default(),
+            border_width,
+            border_color,
             BorderStyle::default(),
         )
     }
 
     /// Resolve the data to points around the center of the bounds.
     fn points(&self, bounds: &Bounds<Pixels>) -> Vec<Point<Pixels>> {
-        let center_x = bounds.origin.x.as_f32() + bounds.size.width.as_f32() / 2.;
-        let center_y = bounds.origin.y.as_f32() + bounds.size.height.as_f32() / 2.;
+        let center_x = bounds.origin.x.to_f32() + bounds.size.width.to_f32() / 2.;
+        let center_y = bounds.origin.y.to_f32() + bounds.size.height.to_f32() / 2.;
 
         self.data
             .iter()
@@ -269,8 +277,8 @@ mod tests {
         assert_eq!(points.len(), 4);
         let expected = [(50., 40.), (60., 50.), (50., 60.), (40., 50.)];
         for (p, (x, y)) in points.iter().zip(expected) {
-            assert!((p.x.as_f32() - x).abs() < 1e-4);
-            assert!((p.y.as_f32() - y).abs() < 1e-4);
+            assert!((p.x.to_f32() - x).abs() < 1e-4);
+            assert!((p.y.to_f32() - y).abs() < 1e-4);
         }
     }
 

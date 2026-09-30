@@ -15,7 +15,7 @@ pub enum Size {
 impl Size {
     fn as_f32(&self) -> f32 {
         match self {
-            Size::Size(val) => val.as_f32(),
+            Size::Size(val) => val.to_f32(),
             Size::XSmall => 0.,
             Size::Small => 1.,
             Size::Medium => 2.,
@@ -122,7 +122,7 @@ impl Size {
     /// e.g. `Size::XSmall.max(Size::Small)` will return `Size::XSmall`.
     pub fn max(&self, other: Self) -> Self {
         match (self, other) {
-            (Size::Size(a), Size::Size(b)) => Size::Size(px(a.as_f32().min(b.as_f32()))),
+            (Size::Size(a), Size::Size(b)) => Size::Size(px(a.to_f32().min(b.to_f32()))),
             (Size::Size(a), _) => Size::Size(*a),
             (_, Size::Size(b)) => Size::Size(b),
             (a, b) if a.as_f32() < b.as_f32() => *a,
@@ -135,7 +135,7 @@ impl Size {
     /// e.g. `Size::XSmall.min(Size::Small)` will return `Size::Small`.
     pub fn min(&self, other: Self) -> Self {
         match (self, other) {
-            (Size::Size(a), Size::Size(b)) => Size::Size(px(a.as_f32().max(b.as_f32()))),
+            (Size::Size(a), Size::Size(b)) => Size::Size(px(a.to_f32().max(b.to_f32()))),
             (Size::Size(a), _) => Size::Size(*a),
             (_, Size::Size(b)) => Size::Size(b),
             (a, b) if a.as_f32() > b.as_f32() => *a,

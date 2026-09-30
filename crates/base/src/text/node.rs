@@ -14,7 +14,9 @@ use gpui::{
 use markdown::mdast;
 
 use crate::{
-    StyledExt, h_flex,
+    StyledExt,
+    compat::FlexExt,
+    h_flex,
     scrollable_mask::horizontal_scroll_area,
     text::{
         CodeBlockActionsFn, CodeBlockHighlighterFn, LinkClickHandlerFn, MarkdownExtensions,
@@ -1203,7 +1205,7 @@ impl Paragraph {
                 let inner_range = (offset + range.start)..(offset + range.end);
                 let mut highlight = mark_highlight(style, node_cx, cx);
                 if let Some(link_mark) = style.link.clone() {
-                    highlight.style.color = Some(node_cx.style.link());
+                    highlight.style.color = Some(node_cx.style.link().into());
                     highlight.style.underline = Some(gpui::UnderlineStyle {
                         thickness: gpui::px(1.),
                         ..Default::default()
@@ -2212,33 +2214,24 @@ impl Paragraph {
                         .object_fit(ObjectFit::Contain)
                         .max_w(relative(1.))
                         .when_some(image.width, |this, width| this.w(width))
+                        // A linked image used to answer an auxiliary (middle)
+                        // click as well, but WGPUI raises click events for the
+                        // primary button only: `on_click` is the whole of the
+                        // click API here, so the aux registration has no
+                        // equivalent to be written against.
                         .when_some(image.link.clone(), |this, link| {
                             let link_click_handler = link_click_handler.clone();
-                            let aux_link = link.clone();
-                            let aux_link_click_handler = link_click_handler.clone();
-                            this.cursor_pointer()
-                                .on_click(move |event, window, cx| {
-                                    crate::TextSelection::end(window, cx);
-                                    cx.stop_propagation();
-                                    handle_link_click(
-                                        &link_click_handler,
-                                        link.url.clone(),
-                                        event.clone(),
-                                        window,
-                                        cx,
-                                    );
-                                })
-                                .on_aux_click(move |event, window, cx| {
-                                    crate::TextSelection::end(window, cx);
-                                    cx.stop_propagation();
-                                    handle_link_click(
-                                        &aux_link_click_handler,
-                                        aux_link.url.clone(),
-                                        event.clone(),
-                                        window,
-                                        cx,
-                                    );
-                                })
+                            this.cursor_pointer().on_click(move |event, window, cx| {
+                                crate::TextSelection::end(window, cx);
+                                cx.stop_propagation();
+                                handle_link_click(
+                                    &link_click_handler,
+                                    link.url.clone(),
+                                    event.clone(),
+                                    window,
+                                    cx,
+                                );
+                            })
                         })
                         .into_any_element(),
                 );
@@ -2255,7 +2248,7 @@ impl Paragraph {
                     let mut highlight = mark_highlight(style, node_cx, cx);
 
                     if let Some(mut link_mark) = style.link.clone() {
-                        highlight.style.color = Some(node_cx.style.link());
+                        highlight.style.color = Some(node_cx.style.link().into());
                         highlight.style.underline = Some(gpui::UnderlineStyle {
                             thickness: gpui::px(1.),
                             ..Default::default()
@@ -2374,7 +2367,7 @@ impl Paragraph {
                                 .unwrap_or(link)
                                 .clone(),
                         );
-                        object_style.color = Some(node_cx.style.link());
+                        object_style.color = Some(node_cx.style.link().into());
                         object_style.underline = Some(gpui::UnderlineStyle {
                             thickness: px(1.),
                             ..Default::default()
@@ -2443,7 +2436,7 @@ impl Paragraph {
                     let mut highlight = mark_highlight(style, node_cx, cx);
 
                     if let Some(mut link_mark) = style.link.clone() {
-                        highlight.style.color = Some(node_cx.style.link());
+                        highlight.style.color = Some(node_cx.style.link().into());
                         highlight.style.underline = Some(gpui::UnderlineStyle {
                             thickness: gpui::px(1.),
                             ..Default::default()
@@ -3071,7 +3064,16 @@ impl BlockNode {
         // Nowrap cells (via the `table_cell` refinement, which cascades to
         // the cell text) must never shrink below their single-line content,
         // so their floor is the content width itself.
-        let nowrap = style.table_cell().text.white_space == Some(WhiteSpace::Nowrap);
+        // WGPUI's `StyleRefinement` keeps a text refinement as an `Option`, so a
+        // table-cell refinement that says nothing about whitespace reads as
+        // "not set", which is the same answer gpui-pre's always-present
+        // refinement gave when it held the default.
+        let nowrap = style
+            .table_cell()
+            .text
+            .as_ref()
+            .and_then(|text| text.white_space)
+            == Some(WhiteSpace::Nowrap);
         let col_min_w: Vec<f32> = if nowrap {
             col_w.clone()
         } else {
@@ -3117,8 +3119,8 @@ impl BlockNode {
                         // squeezes columns (their text wraps) down to the
                         // floors before the track starts to scroll.
                         .flex_basis(px(width))
-                        .flex_grow(width)
-                        .flex_shrink(1.)
+                        .flex_grow_by(width)
+                        .flex_shrink()
                         .min_w(px(min_width))
                         .overflow_hidden()
                         .when(align == ColumnumnAlign::Center, |this| this.text_center())

@@ -1,7 +1,5 @@
-use gpui::{
-    ElementId, Entity, InteractiveElement as _, SharedString, StatefulInteractiveElement as _,
-    prelude::FluentBuilder as _,
-};
+use crate::compat::A11yElementExt;
+use gpui::{ElementId, Entity, InteractiveElement as _, SharedString, prelude::FluentBuilder as _};
 
 use super::QuestionnaireState;
 use crate::{Checkbox, CheckboxState, Radio};

@@ -119,7 +119,7 @@ fn controlled_change_callbacks_preserve_activation_and_replace_aliases(cx: &mut 
                         requests,
                     }
                 });
-                visual.update(|window, cx| window.draw(cx).clear(cx));
+                visual.update(|window, cx| window.draw(cx).clear());
                 let target = visual.debug_bounds("control-target").unwrap();
                 // Click inside the leading control, not the full-width wrapper.
                 visual.simulate_click(
@@ -127,7 +127,7 @@ fn controlled_change_callbacks_preserve_activation_and_replace_aliases(cx: &mut 
                     Modifiers::default(),
                 );
                 visual.update(|window, cx| {
-                    window.blur(cx);
+                    window.blur();
                     window.focus_next(cx);
                 });
                 for key in ["enter", "space"] {
@@ -184,10 +184,10 @@ fn owner_applies_requested_value_before_the_next_activation(cx: &mut TestAppCont
         checked: false,
         requests: vec![],
     });
-    visual.update(|window, cx| window.draw(cx).clear(cx));
+    visual.update(|window, cx| window.draw(cx).clear());
     visual.simulate_click(gpui::point(px(8.), px(8.)), Modifiers::default());
     visual.update(|window, cx| {
-        window.draw(cx).clear(cx);
+        window.draw(cx).clear();
         window.focus_next(cx);
     });
     let keystroke = Keystroke::parse("space").unwrap();

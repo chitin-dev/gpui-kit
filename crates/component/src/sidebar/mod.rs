@@ -204,7 +204,7 @@ fn sidebar_expanded_width(style: &StyleRefinement) -> Option<Pixels> {
 fn sidebar_animation_id(id: &ElementId, from: Pixels, to: Pixels) -> ElementId {
     ElementId::NamedInteger(
         format!("{id}-anim-w").into(),
-        (from.as_f32().to_bits() as u64) << 32 | to.as_f32().to_bits() as u64,
+        (from.to_f32().to_bits() as u64) << 32 | to.to_f32().to_bits() as u64,
     )
 }
 
@@ -391,7 +391,7 @@ impl<E: SidebarItem> RenderOnce for Sidebar<E> {
 
         let id = self.id;
         let content_len = self.content.len();
-        let overdraw = px(window.viewport_size().height.as_f32() * 0.3);
+        let overdraw = px(window.viewport_size().height.to_f32() * 0.3);
         let list_state = window
             .use_keyed_state(
                 SharedString::from(format!("{}-list-state", id)),

@@ -4,14 +4,15 @@
 //! inside the content would receive the content's scroll offset and would stop
 //! covering the viewport after the first scroll.
 
+use gpui_base::compat::OngoingScroll;
 use std::cell::RefCell;
 use std::panic::Location;
 use std::rc::Rc;
 
 use gpui::{
     App, Axis, Bounds, ContentMask, Element, ElementId, GlobalElementId, Hitbox, IntoElement,
-    IsZero as _, LayoutId, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent,
-    OngoingScroll, Position, ScrollWheelEvent, Style, TouchPhase, Window, relative,
+    IsZero as _, LayoutId, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Position,
+    ScrollWheelEvent, Style, TouchPhase, Window, relative,
 };
 
 use super::state::CarouselState;
@@ -217,7 +218,7 @@ impl Element for CarouselScrollMask {
                     state.update(cx, |state, cx| {
                         state.handle_wheel_step(axis, primary_delta, cx)
                     })
-                } else if matches!(event.touch_phase, TouchPhase::Ended | TouchPhase::Cancelled) {
+                } else if matches!(event.touch_phase, TouchPhase::Ended) {
                     false
                 } else {
                     // A gesture this carousel already owns stays here even at
@@ -235,12 +236,12 @@ impl Element for CarouselScrollMask {
                 };
 
                 if precise {
+                    // WGPUI's `TouchPhase` has no cancelled state, so a
+                    // gesture that is taken away from the carousel arrives as
+                    // an end and settles like one.
                     match event.touch_phase {
                         TouchPhase::Ended => {
                             state.update(cx, |state, cx| state.finish_scroll(false, cx));
-                        }
-                        TouchPhase::Cancelled => {
-                            state.update(cx, |state, cx| state.finish_scroll(true, cx));
                         }
                         TouchPhase::Started | TouchPhase::Moved => {}
                     }
@@ -326,7 +327,7 @@ mod tests {
             move |_, _| ButtonDragHarness { state, clicks }
         });
         let cx: &mut VisualTestContext = cx;
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         cx.simulate_click(point(px(10.), px(10.)), Modifiers::default());
         assert_eq!(clicks.get(), 1);
@@ -351,7 +352,7 @@ mod tests {
         );
         assert_eq!(clicks.get(), 0);
 
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         cx.simulate_click(point(px(10.), px(10.)), Modifiers::default());
         assert_eq!(clicks.get(), 1);
     }
@@ -399,7 +400,7 @@ mod tests {
                 outer_handle,
             }
         });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         (outer_handle, cx)
     }
 

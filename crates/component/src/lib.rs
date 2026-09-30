@@ -138,7 +138,6 @@ pub fn init(cx: &mut App) {
     list::init(cx);
     command::init(cx);
     carousel::init(cx);
-    notification::init(cx);
     popover::init(cx);
     questionnaire::init(cx);
     menu::init(cx);

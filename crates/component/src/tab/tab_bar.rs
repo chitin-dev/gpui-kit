@@ -1,7 +1,8 @@
+use gpui_base::compat::Anchor;
 use std::{cell::RefCell, rc::Rc};
 
 use gpui::{
-    Anchor, AnyElement, App, Background, Bounds, Edges, ElementId, InteractiveElement, IntoElement,
+    AnyElement, App, Background, Bounds, Edges, ElementId, InteractiveElement, IntoElement,
     ParentElement, Pixels, RenderOnce, ScrollHandle, SharedString, StatefulInteractiveElement as _,
     StyleRefinement, Styled, Window, div, prelude::FluentBuilder as _, px,
 };
@@ -643,7 +644,7 @@ mod tests {
                 group_clicks,
             }
         });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         (cx, child_clicks, group_clicks)
     }
 
@@ -691,7 +692,7 @@ mod tests {
     fn prefix_content_and_suffix_keep_their_order(cx: &mut TestAppContext) {
         cx.update(crate::theme::init);
         let (_, cx) = cx.add_window_view(|_, _| ContentHarness);
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         let prefix = cx.debug_bounds("tab-prefix").unwrap();
         let child = cx.debug_bounds("tab-child").unwrap();
@@ -812,7 +813,7 @@ mod tests {
 
     fn draw(cx: &mut gpui::VisualTestContext) {
         cx.run_until_parked();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
     }
 
     #[gpui::test]

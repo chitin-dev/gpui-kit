@@ -7,7 +7,7 @@ use gpui::{
     AnyElement, App, Background, ClickEvent, Context, Decorations, Hsla, InteractiveElement,
     IntoElement, MouseButton, ParentElement, Pixels, Render, RenderOnce, Rgba,
     StatefulInteractiveElement as _, StyleRefinement, Styled, TitlebarOptions, Window,
-    WindowControlArea, WindowOptions, div, linear_color_stop, linear_gradient,
+    WindowControlArea, WindowOptions, div, gradient_color_stop, linear_gradient,
     prelude::FluentBuilder as _, px,
 };
 use smallvec::SmallVec;
@@ -30,8 +30,8 @@ fn default_title_bar_background(title_bar: Hsla, background: Hsla) -> Background
 
     linear_gradient(
         180.,
-        linear_color_stop(mixed, 0.),
-        linear_color_stop(title_bar, 1.),
+        gradient_color_stop(mixed, 0.),
+        gradient_color_stop(title_bar, 1.),
     )
 }
 
@@ -78,14 +78,15 @@ impl TitleBar {
     ///     ..TitleBar::window_options()
     /// };
     /// ```
+    ///
+    /// The transparent title bar is all this can say: the title bar draws itself
+    /// and moves the window with `start_window_move`, but WGPUI has no
+    /// `app_owns_titlebar_drag` switch, so on macOS AppKit may still treat the
+    /// title bar as a system move region — handling a double click of its own,
+    /// and delaying clicks while it tells one from a drag.
     pub fn window_options() -> WindowOptions {
         WindowOptions {
             titlebar: Some(Self::title_bar_options()),
-            // The title bar draws itself and moves the window via `start_window_move`,
-            // so AppKit must not treat it as a system window-move region. Otherwise macOS
-            // handles title bar double clicks on its own (in addition to `on_double_click`
-            // below) and delays title bar clicks while disambiguating double clicks.
-            app_owns_titlebar_drag: true,
             ..Default::default()
         }
     }

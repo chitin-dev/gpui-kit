@@ -1,12 +1,13 @@
+use crate::compat::A11yElementExt;
+use crate::compat::{Role, Toggled};
 use crate::input::InputState;
 use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, AppContext as _, ClickEvent, Context, Div, ElementId, Entity, EventEmitter,
     FocusHandle, Focusable, Hsla, InteractiveElement, Interactivity, IntoElement, KeyBinding,
-    ParentElement, Render, RenderOnce, Rgba, Role, SharedString, Stateful,
-    StatefulInteractiveElement, StyleRefinement, Styled, Subscription, Toggled, Window, div, hsla,
-    prelude::FluentBuilder as _,
+    ParentElement, Render, RenderOnce, Rgba, SharedString, Stateful, StatefulInteractiveElement,
+    StyleRefinement, Styled, Subscription, Window, div, hsla, prelude::FluentBuilder as _,
 };
 use smallvec::SmallVec;
 

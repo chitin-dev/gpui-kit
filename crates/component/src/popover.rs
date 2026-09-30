@@ -1,9 +1,10 @@
 use gpui::{
-    Anchor, Animation, AnimationExt as _, AnyElement, App, Bounds, Context, Div, ElementId,
-    FocusHandle, InteractiveElement as _, IntoElement, MouseButton, ParentElement, PathBuilder,
-    Pixels, Point, RenderOnce, Stateful, StyleRefinement, Styled, Window, canvas, point,
+    Animation, AnimationExt as _, AnyElement, App, Bounds, Context, Div, ElementId, FocusHandle,
+    InteractiveElement as _, IntoElement, MouseButton, ParentElement, PathBuilder, Pixels, Point,
+    RenderOnce, Stateful, StyleRefinement, Styled, Window, canvas, point,
     prelude::FluentBuilder as _, px,
 };
+use gpui_base::compat::{Anchor, BoundsExt as _};
 use std::{cell::Cell, rc::Rc, time::Duration};
 
 use crate::{ActiveTheme as _, ThemeStyled as _};
@@ -309,7 +310,11 @@ impl Popover {
             .map(|this| match anchor {
                 Anchor::TopLeft | Anchor::TopCenter | Anchor::TopRight => this.top_1(),
                 Anchor::BottomLeft | Anchor::BottomCenter | Anchor::BottomRight => this.bottom_1(),
-                Anchor::LeftCenter | Anchor::RightCenter => this.top_1(), // Fallback for centered
+                // The anchors that name no vertical edge, and `Center`, which
+                // names neither: the surface sits level with its trigger, so the
+                // content keeps the top inset a surface with no arrow to make
+                // room for starts with anyway.
+                Anchor::LeftCenter | Anchor::RightCenter | Anchor::Center => this.top_1(),
             })
     }
 }
@@ -426,6 +431,10 @@ fn arrow_anchor(anchor: Anchor, trigger: Bounds<Pixels>) -> (Placement, Point<Pi
         Anchor::BottomRight => (Placement::Top, trigger.top_right()),
         Anchor::LeftCenter => (Placement::Right, trigger.right_center()),
         Anchor::RightCenter => (Placement::Left, trigger.left_center()),
+        // A centered popup covers its trigger, so no side of the surface faces
+        // it. The arrow is drawn on the bottom edge aiming at the trigger's
+        // center, which is where a popup that names no edge ends up anyway.
+        Anchor::Center => (Placement::Bottom, trigger.center()),
     }
 }
 
@@ -498,6 +507,7 @@ mod tests {
     use crate::{button::Button, h_flex, theme::Theme};
     use gpui::{Bounds, Context, MouseButton, Point, Render, div, point, px, size};
     use gpui_base::Popup as BasePopup;
+    use gpui_base::compat::Anchor;
     use std::{cell::RefCell, rc::Rc};
 
     #[test]
@@ -601,8 +611,8 @@ mod tests {
             origin: point(px(200.), px(200.)),
             arrow: false,
         });
-        window.update(|window, cx| window.draw(cx).clear(cx));
-        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.update(|window, cx| window.draw(cx).clear());
+        window.update(|window, cx| window.draw(cx).clear());
         // Legacy TopLeft means below the trigger, including the default 0.25rem gap.
         let legacy = window.debug_bounds("positioned-content").unwrap();
         assert_eq!(legacy.left(), px(200.));
@@ -624,7 +634,7 @@ mod tests {
                     view.offset = Some(px(12.));
                     cx.notify();
                 });
-                window.draw(cx).clear(cx);
+                window.draw(cx).clear();
             });
             assert_eq!(
                 window.debug_bounds("positioned-content").unwrap().origin,
@@ -638,7 +648,7 @@ mod tests {
                 view.origin = point(px(260.), px(240.));
                 cx.notify();
             });
-            window.draw(cx).clear(cx);
+            window.draw(cx).clear();
         });
         assert_eq!(
             window.debug_bounds("positioned-content").unwrap().origin,
@@ -687,8 +697,8 @@ mod tests {
     fn trigger_style_is_applied_to_the_trigger_container(cx: &mut gpui::TestAppContext) {
         cx.update(crate::init);
         let (view, window) = cx.add_window_view(|_, _| TriggerStyleHarness { styled: false });
-        window.update(|window, cx| window.draw(cx).clear(cx));
-        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.update(|window, cx| window.draw(cx).clear());
+        window.update(|window, cx| window.draw(cx).clear());
         // Unstyled: the container wraps the 40px trigger, so the content's right
         // edge meets the trigger's right edge at 140px.
         assert_eq!(
@@ -701,9 +711,9 @@ mod tests {
                 view.styled = true;
                 cx.notify();
             });
-            window.draw(cx).clear(cx);
+            window.draw(cx).clear();
         });
-        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.update(|window, cx| window.draw(cx).clear());
         // `w_full` stretches the container across the 200px row, and the popup
         // follows the container's right edge at 300px.
         assert_eq!(
@@ -721,8 +731,8 @@ mod tests {
             origin: point(px(200.), px(8.)),
             arrow: true,
         });
-        window.update(|window, cx| window.draw(cx).clear(cx));
-        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.update(|window, cx| window.draw(cx).clear());
+        window.update(|window, cx| window.draw(cx).clear());
         // Bottom edge 48 + tip gap 12 + arrow depth 6.
         assert_eq!(
             window.debug_bounds("positioned-content").unwrap().origin,
@@ -734,7 +744,7 @@ mod tests {
                 view.arrow = false;
                 cx.notify();
             });
-            window.draw(cx).clear(cx);
+            window.draw(cx).clear();
         });
         assert_eq!(
             window.debug_bounds("positioned-content").unwrap().origin,
@@ -751,8 +761,8 @@ mod tests {
             origin: point(px(200.), px(8.)),
             arrow: true,
         });
-        window.update(|window, cx| window.draw(cx).clear(cx));
-        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.update(|window, cx| window.draw(cx).clear());
+        window.update(|window, cx| window.draw(cx).clear());
         // Clamp to the window margin instead of flipping below the trigger.
         assert_eq!(
             window.debug_bounds("positioned-content").unwrap().top(),
@@ -901,14 +911,14 @@ mod tests {
             let changes = changes.clone();
             move |_, _| PopoverHarness { changes }
         });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         cx.simulate_click(point(px(20.), px(20.)), Default::default());
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         assert!(cx.debug_bounds("runtime-popover-content").is_some());
 
         cx.simulate_click(point(px(300.), px(300.)), Default::default());
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         assert!(cx.debug_bounds("runtime-popover-content").is_none());
         // A change callback reports state transitions, not redundant dismissal
         // requests. The base host may see both paths, but only the first closes.
@@ -938,8 +948,8 @@ mod tests {
             init(cx);
         });
         let (_, cx) = cx.add_window_view(|_, _| DefaultOpenHarness);
-        cx.update(|window, cx| window.draw(cx).clear(cx));
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
+        cx.update(|window, cx| window.draw(cx).clear());
         assert!(cx.debug_bounds("default-open-content").is_some());
     }
 
@@ -969,14 +979,14 @@ mod tests {
         cx.update(crate::init);
         let (view, window) = cx.add_window_view(|_, _| Harness { open: true });
 
-        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.update(|window, cx| window.draw(cx).clear());
         let opening = window.debug_bounds("surface").unwrap().origin;
 
         // The animation runs off the wall clock, so settling is waited out
         // rather than stepped. Several times the duration leaves room for a
         // loaded machine.
         std::thread::sleep(DROPDOWN_ENTER_DURATION * 4);
-        window.update(|window, cx| window.draw(cx).clear(cx));
+        window.update(|window, cx| window.draw(cx).clear());
         let settled = window.debug_bounds("surface").unwrap().origin;
 
         assert!(
@@ -990,7 +1000,7 @@ mod tests {
                     this.open = open;
                     cx.notify();
                 });
-                window.draw(cx).clear(cx);
+                window.draw(cx).clear();
             });
         }
 

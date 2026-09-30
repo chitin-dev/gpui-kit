@@ -1,9 +1,10 @@
 use crate::root::WindowState;
 use gpui_base::TestSupportExt as _;
+use gpui_base::compat::Anchor;
 use std::{rc::Rc, sync::LazyLock, time::Duration};
 
 use gpui::{
-    Action, Anchor, Animation, AnimationExt as _, AnyElement, App, BoxShadow, ClickEvent, Edges,
+    Action, Animation, AnimationExt as _, AnyElement, App, BoxShadow, ClickEvent, Edges,
     FocusHandle, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels, RenderOnce,
     SharedString, StyleRefinement, Styled, Window, WindowControlArea, anchored, div, hsla, point,
     prelude::FluentBuilder, px,
@@ -760,14 +761,12 @@ impl RenderOnce for Dialog {
                                                         offset: point(px(0.), px(20.)),
                                                         blur_radius: px(25.),
                                                         spread_radius: px(-5.),
-                                                        inset: false,
                                                     },
                                                     BoxShadow {
                                                         color: hsla(0., 0., 0., 0.1 * delta),
                                                         offset: point(px(0.), px(8.)),
                                                         blur_radius: px(10.),
                                                         spread_radius: px(-6.),
-                                                        inset: false,
                                                     },
                                                 ];
                                                 this.shadow(shadow)
@@ -821,7 +820,7 @@ pub(crate) mod tests {
             crate::Root::new(view, window, cx)
         });
         cx.simulate_resize(window_size);
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         cx
     }
 
@@ -832,8 +831,8 @@ pub(crate) mod tests {
         cx.update(|window, cx| window.open_dialog(cx, build));
         cx.run_until_parked();
         // One frame mounts the layer, the next paints it at rest.
-        cx.update(|window, cx| window.draw(cx).clear(cx));
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
+        cx.update(|window, cx| window.draw(cx).clear());
     }
 
     fn surface(cx: &mut VisualTestContext, layer_ix: usize) -> Bounds<Pixels> {

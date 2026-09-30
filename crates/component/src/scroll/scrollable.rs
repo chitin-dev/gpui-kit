@@ -148,7 +148,9 @@ where
             .map(|this| match self.axis {
                 ScrollbarAxis::Vertical => this.h_auto().min_h_full(),
                 ScrollbarAxis::Horizontal => this.w_auto().min_w_full(),
-                ScrollbarAxis::Both => this.size_auto().min_size_full(),
+                // WGPUI's style macro has no `min_size` prefix, so both axes
+                // are named.
+                ScrollbarAxis::Both => this.size_auto().min_w_full().min_h_full(),
             });
 
         // Keep the scroll area in the normal flow: its content size must

@@ -222,13 +222,14 @@ fn default_mono_font_family() -> SharedString {
     }
 }
 
+/// Every elevation this module builds is cast outside the box, which is what
+/// WGPUI's `BoxShadow` can draw: the type has no `inset` flag.
 fn box_shadow(x: f32, y: f32, blur: f32, spread: f32, color: Hsla) -> BoxShadow {
     BoxShadow {
         color,
         offset: point(px(x), px(y)),
         blur_radius: px(blur),
         spread_radius: px(spread),
-        inset: false,
     }
 }
 

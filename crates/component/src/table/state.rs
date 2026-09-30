@@ -1,4 +1,7 @@
 use gpui_base::TestSupportExt as _;
+use gpui_base::compat::A11yElementExt;
+use gpui_base::compat::FlexExt as _;
+use gpui_base::compat::Role;
 use std::{ops::Range, rc::Rc, time::Duration};
 
 use crate::{
@@ -460,7 +463,11 @@ where
         }
 
         let cols = self.col_groups.get(self.fixed_left_cols_count()..)?;
-        let col_left: Pixels = cols.get(..col_ix)?.iter().map(|col| col.width).sum();
+        // WGPUI adds `Pixels` but does not sum them, so the widths are folded.
+        let col_left: Pixels = cols
+            .get(..col_ix)?
+            .iter()
+            .fold(Pixels::ZERO, |total, col| total + col.width);
         let col_right = col_left + cols.get(col_ix)?.width;
         let offset_x = self.horizontal_scroll_handle.offset().x;
 
@@ -1954,7 +1961,7 @@ where
                                                 [visible_col_range.end..total_cols]
                                                 .iter()
                                                 .map(|g| g.width)
-                                                .sum();
+                                                .fold(Pixels::ZERO, |total, width| total + width);
                                             r.child(div().w(right_spacer).h_full().flex_shrink_0())
                                         })
                                         .child(self.delegate.render_last_empty_col(window, cx))
@@ -2021,7 +2028,7 @@ where
             let style = tr.style().clone();
 
             tr.test_support()
-                .role(gpui::Role::Row)
+                .role(Role::Row)
                 .aria_selected(is_selected)
                 .h_flex()
                 .w_full()
@@ -2277,7 +2284,7 @@ where
                 .iter()
                 .take(columns_count)
                 .map(|col_group| col_group.width)
-                .sum();
+                .fold(Pixels::ZERO, |total, width| total + width);
 
             // Render fake rows to fill the rest table space
             self.delegate

@@ -7,6 +7,7 @@ use gpui::{
 };
 
 use crate::{ActiveTheme as _, Icon, IconName, Sizable, Size, StyledExt as _, h_flex};
+use gpui_base::compat::ReduceMotionExt as _;
 use gpui_base::{
     Accordion as BaseAccordion, AccordionHeader as BaseAccordionHeader,
     AccordionItem as BaseAccordionItem, AccordionPanel as BaseAccordionPanel, AccordionTrigger,
@@ -420,7 +421,7 @@ mod tests {
     fn expanded_panel_keeps_content_between_its_header_and_the_next_item(cx: &mut TestAppContext) {
         cx.update(crate::theme::init);
         let (_, cx) = cx.add_window_view(|_, _| Harness);
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         let first = cx.debug_bounds("first-title").unwrap();
         let content = cx.debug_bounds("first-content").unwrap();
@@ -445,7 +446,7 @@ mod tests {
     }
 
     fn content_height(cx: &mut gpui::VisualTestContext) -> Option<gpui::Pixels> {
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         cx.debug_bounds("toggle-content")
             .map(|bounds| bounds.size.height)
     }

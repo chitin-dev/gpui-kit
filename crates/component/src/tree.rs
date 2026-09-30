@@ -5,6 +5,8 @@ use gpui::{
     RenderOnce, StyleRefinement, Styled, Window, div,
 };
 
+use gpui_base::compat::FlexExt as _;
+
 use crate::{
     Selectable as _, StyledExt,
     list::ListItem,

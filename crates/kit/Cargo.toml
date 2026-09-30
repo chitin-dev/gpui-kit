@@ -22,9 +22,7 @@ component = ["dep:gpui-component"]
 # The default icon set for `gpui-component`, `gpui_kit::assets`.
 assets = ["dep:gpui-kit-assets"]
 # GPUI's test harness, native-platform rendering, and Kit UI test helpers.
-test-support = ["gpui/test-support", "gpui_platform/test-support", "gpui-base/test-support", "gpui-component?/test-support"]
-# Frame-event instrumentation remains opt-in for performance builds.
-profiler = ["gpui/profiler"]
+test-support = ["gpui/test-support", "gpui-base/test-support", "gpui-component?/test-support"]
 inspector = ["gpui/inspector", "gpui-base/inspector", "gpui-component?/inspector"]
 decimal = ["component", "gpui-component/decimal"]
 tree-sitter = ["component", "gpui-component/tree-sitter"]
@@ -71,12 +69,6 @@ gpui.workspace = true
 gpui-base.workspace = true
 gpui-component = { workspace = true, optional = true }
 gpui-kit-assets = { workspace = true, optional = true }
-
-[target.'cfg(not(any(target_os = "ios", target_os = "android")))'.dependencies]
-gpui_platform.workspace = true
-
-[target.'cfg(target_family = "wasm")'.dependencies]
-gpui_web.workspace = true
 
 [dev-dependencies]
 chrono = "0.4.38"

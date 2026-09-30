@@ -1,7 +1,9 @@
+use crate::compat::A11yElementExt;
+use crate::compat::Role;
 use std::{ops::Range, rc::Rc};
 
 use gpui::{
-    AnyElement, App, ElementId, InteractiveElement, IntoElement, ParentElement, RenderOnce, Role,
+    AnyElement, App, ElementId, InteractiveElement, IntoElement, ParentElement, RenderOnce,
     SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window, div,
 };
 
@@ -203,6 +205,8 @@ fn calculate_items(current: usize, total: usize, max_visible: usize) -> Vec<Pagi
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::compat::A11yElementExt;
+    use crate::compat::Role;
     use std::cell::Cell;
 
     use gpui::{Element as _, accesskit};

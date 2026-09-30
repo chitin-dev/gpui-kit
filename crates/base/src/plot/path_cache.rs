@@ -2,54 +2,52 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 
 use gpui::{App, ElementId, Entity, Path, Pixels, Point, Window};
 
-/// A tessellated path reused across frames while its shape is unchanged.
+/// A tessellated path reused across frames while its shape and position are
+/// unchanged.
 ///
-/// A chart repaints on every frame it is on screen — a scrolling list moves
-/// it — and tessellating its strokes (Catmull-Rom curves, dashes) is the bulk
-/// of that work, while the vertices only depend on the projected points
-/// relative to the chart's origin. A plot keeps one cache per shape and paints
-/// through [`Line::paint_cached`](super::shape::Line::paint_cached) or
-/// [`Area::paint_cached`](super::shape::Area::paint_cached): the path is built
-/// once per shape key, at a zero origin, and moved to the frame's origin on
-/// every paint.
+/// A chart repaints on every frame it is on screen, and tessellating its
+/// strokes (Catmull-Rom curves, dashes) is the bulk of that work. A plot keeps
+/// one cache per shape and paints through
+/// [`Line::paint_cached`](super::shape::Line::paint_cached) or
+/// [`Area::paint_cached`](super::shape::Area::paint_cached): `build` is handed
+/// the frame's origin and returns the path placed there, and the path is kept
+/// until the shape key or the origin changes.
+///
+/// WGPUI is why `build` takes the origin instead of the cache moving a
+/// finished path to it: `Path` keeps its bounds and its vertices private, and
+/// `Window::paint_path` takes no offset, so a path built at one origin cannot
+/// be moved to another. A plot whose origin does not move therefore reuses its
+/// tessellation, while one that scrolls rebuilds at its new origin.
 #[derive(Default)]
 pub struct PathCache {
     key: Option<u64>,
-    /// Built relative to a zero origin.
+    /// The origin the cached path was built for.
+    origin: Point<Pixels>,
     path: Option<Path<Pixels>>,
 }
 
 impl PathCache {
-    /// The path for `key`, moved to `origin`. `build` runs only when the key
-    /// differs from the last call's; it must build relative to a zero origin.
+    /// The path for `key` at `origin`. `build` runs only when the key or the
+    /// origin differs from the last call's, and must place the path it returns
+    /// at the origin it is given.
     pub fn get(
         &mut self,
         key: u64,
         origin: Point<Pixels>,
-        build: impl FnOnce() -> Option<Path<Pixels>>,
+        build: impl FnOnce(Point<Pixels>) -> Option<Path<Pixels>>,
     ) -> Option<Path<Pixels>> {
-        if self.key != Some(key) {
-            self.path = build();
+        if self.key != Some(key) || self.origin != origin {
+            self.path = build(origin);
             self.key = Some(key);
+            self.origin = origin;
         }
-        self.path.as_ref().map(|path| translated(path, origin))
+        self.path.clone()
     }
 
     /// Whether the last [`Self::get`] reused the path built by an earlier one.
     pub fn is_warm(&self) -> bool {
         self.key.is_some()
     }
-}
-
-/// `path` moved by `offset`. A finished path is only its bounds and vertices;
-/// the builder cursor it keeps is not read again.
-fn translated(path: &Path<Pixels>, offset: Point<Pixels>) -> Path<Pixels> {
-    let mut path = path.clone();
-    path.bounds.origin = path.bounds.origin + offset;
-    for vertex in &mut path.vertices {
-        vertex.xy_position = vertex.xy_position + offset;
-    }
-    path
 }
 
 /// The [`PathCache`]s of a plot that is rebuilt on every render, kept in the
@@ -116,8 +114,8 @@ impl ShapeKey {
     }
 
     pub fn point(&mut self, point: Point<Pixels>) -> &mut Self {
-        point.x.as_f32().to_bits().hash(&mut self.0);
-        point.y.as_f32().to_bits().hash(&mut self.0);
+        point.x.to_f32().to_bits().hash(&mut self.0);
+        point.y.to_f32().to_bits().hash(&mut self.0);
         self
     }
 
@@ -136,44 +134,66 @@ mod tests {
     use super::*;
     use gpui::{PathBuilder, point, px};
 
-    fn diagonal() -> Option<Path<Pixels>> {
+    /// A 10px diagonal from `origin`, the way a shape builds the path its
+    /// cache holds.
+    fn diagonal(origin: Point<Pixels>) -> Option<Path<Pixels>> {
         let mut builder = PathBuilder::stroke(px(2.));
-        builder.move_to(point(px(0.), px(0.)));
-        builder.line_to(point(px(10.), px(10.)));
+        builder.move_to(origin);
+        builder.line_to(point(origin.x + px(10.), origin.y + px(10.)));
         builder.build().ok()
     }
 
     #[test]
-    fn builds_once_per_key_and_moves_to_each_origin() {
+    fn builds_once_per_key_and_origin() {
         let mut cache = PathCache::default();
         let mut builds = 0;
+
         let first = cache
-            .get(1, point(px(100.), px(50.)), || {
+            .get(1, point(px(100.), px(50.)), |origin| {
                 builds += 1;
-                diagonal()
+                diagonal(origin)
             })
             .unwrap();
-        let second = cache
-            .get(1, point(px(200.), px(50.)), || {
+        // The same key at the same origin reuses the tessellation.
+        let repeated = cache
+            .get(1, point(px(100.), px(50.)), |origin| {
                 builds += 1;
-                diagonal()
+                diagonal(origin)
             })
             .unwrap();
         assert_eq!(builds, 1);
-        assert_eq!(first.vertices.len(), second.vertices.len());
-        for (a, b) in first.vertices.iter().zip(&second.vertices) {
-            assert_eq!(b.xy_position.x - a.xy_position.x, px(100.));
-            assert_eq!(b.xy_position.y, a.xy_position.y);
-            assert_eq!(a.st_position, b.st_position);
-        }
-        assert_eq!(second.bounds.origin.x - first.bounds.origin.x, px(100.));
-        assert_eq!(first.bounds.size, second.bounds.size);
+        // A `Path` exposes no geometry, so the paths are compared as a whole.
+        assert_eq!(format!("{first:?}"), format!("{repeated:?}"));
 
-        cache.get(2, point(px(0.), px(0.)), || {
-            builds += 1;
-            diagonal()
-        });
+        // A new origin places the shape elsewhere, so the cache builds again.
+        cache
+            .get(1, point(px(200.), px(50.)), |origin| {
+                builds += 1;
+                diagonal(origin)
+            })
+            .unwrap();
         assert_eq!(builds, 2);
+
+        // So does a new key at an origin already seen.
+        cache
+            .get(2, point(px(200.), px(50.)), |origin| {
+                builds += 1;
+                diagonal(origin)
+            })
+            .unwrap();
+        assert_eq!(builds, 3);
+
+        // The cache holds one path, so the first origin is a miss again — and
+        // rebuilding it there reproduces the path it held before.
+        let rebuilt = cache
+            .get(1, point(px(100.), px(50.)), |origin| {
+                builds += 1;
+                diagonal(origin)
+            })
+            .unwrap();
+        assert_eq!(builds, 4);
+        assert_eq!(format!("{first:?}"), format!("{rebuilt:?}"));
+        assert!(cache.is_warm());
     }
 
     #[test]

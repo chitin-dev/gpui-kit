@@ -360,7 +360,7 @@ mod tests {
         let expected = std::array::from_fn(|_| Arc::new(Mutex::new(None)));
         let items = expected.clone();
         let (_, cx) = cx.add_window_view(move |_, _| ToolbarHarness { items });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         for observed in expected {
             assert_eq!(*observed.lock().unwrap(), Some(Size::Small));
@@ -372,7 +372,7 @@ mod tests {
         let item = Arc::new(Mutex::new(None));
         let observed = item.clone();
         let (_, cx) = cx.add_window_view(move |_, _| ToolbarGroupHarness { item });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         assert_eq!(*observed.lock().unwrap(), Some(Size::Small));
     }

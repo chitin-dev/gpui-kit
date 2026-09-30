@@ -4,10 +4,11 @@
 //! alignment, and viewport clamping cannot drift apart between popups,
 //! tooltips, and menus.
 
+use crate::compat::Anchor;
 use gpui::{
-    Anchor, AnyElement, App, Bounds, Decorations, Display, Edges, Element, GlobalElementId,
-    Half as _, HitboxBehavior, InspectorElementId, IntoElement, LayoutId, ParentElement, Pixels,
-    Point, Position, Size, Style, Window, point, px,
+    AnyElement, App, Bounds, Decorations, Display, Edges, Element, GlobalElementId, Half as _,
+    HitboxBehavior, InspectorElementId, IntoElement, LayoutId, ParentElement, Pixels, Point,
+    Position, Size, Style, Window, point, px,
 };
 
 use crate::Placement;
@@ -217,7 +218,7 @@ fn resolve(
     match strategy {
         Strategy::Corner { anchor, position } => ResolvedPosition {
             bounds: clamp(
-                Bounds::from_anchor_and_size(anchor, position, popup_size),
+                anchor.bounds_at(position, popup_size),
                 viewport_size,
                 margin,
             ),
@@ -451,6 +452,7 @@ impl IntoElement for Positioner {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::compat::Anchor;
     use gpui::Tiling;
 
     const MARGIN: Pixels = px(4.);

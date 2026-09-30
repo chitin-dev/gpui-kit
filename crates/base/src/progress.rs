@@ -1,7 +1,9 @@
+use crate::compat::A11yElementExt;
+use crate::compat::Role;
 use gpui::{
     AnyElement, App, Div, ElementId, InteractiveElement, Interactivity, IntoElement, ParentElement,
-    RenderOnce, Role, SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window,
-    div, prelude::FluentBuilder as _,
+    RenderOnce, SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window, div,
+    prelude::FluentBuilder as _,
 };
 use smallvec::SmallVec;
 
@@ -130,6 +132,7 @@ progress_part!(ProgressIndicator, "An unstyled progress indicator.");
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::compat::Role;
     use gpui::{Element as _, accesskit};
 
     #[gpui::test]

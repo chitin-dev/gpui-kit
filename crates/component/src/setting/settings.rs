@@ -11,8 +11,7 @@ use crate::{
 };
 use gpui::{
     App, AppContext as _, Axis, ElementId, Entity, IntoElement, ParentElement as _, Pixels,
-    RenderOnce, StyleRefinement, Styled, Window, container_query, div, prelude::FluentBuilder as _,
-    px, relative,
+    RenderOnce, StyleRefinement, Styled, Window, div, prelude::FluentBuilder as _, px, relative,
 };
 use rust_i18n::t;
 
@@ -420,16 +419,20 @@ impl RenderOnce for Settings {
                     .size_range(sidebar_size_range)
                     .child(sidebar),
             )
-            .child(
-                resizable_panel().child(container_query(move |size, window, cx| {
-                    let options = options.with_layout(if size.width <= STACKED_LAYOUT_MAX_WIDTH {
-                        Axis::Vertical
-                    } else {
-                        Axis::Horizontal
-                    });
-                    self.render_active_page(&state, &filter, &options, window, cx)
-                })),
-            )
+            .child(resizable_panel().child({
+                // WGPUI has no container query, so the panel's width is
+                // estimated from the window instead: it spans what the
+                // resizable sidebar leaves of it. A sidebar the user has
+                // dragged away from its initial width shifts the estimate,
+                // which the coarse breakpoint absorbs.
+                let panel_width = window.viewport_size().width - self.sidebar_width;
+                let options = options.with_layout(if panel_width <= STACKED_LAYOUT_MAX_WIDTH {
+                    Axis::Vertical
+                } else {
+                    Axis::Horizontal
+                });
+                self.render_active_page(&state, &filter, &options, window, cx)
+            }))
     }
 }
 

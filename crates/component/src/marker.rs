@@ -5,9 +5,11 @@ use crate::{
 };
 use gpui::{
     AnimationExt as _, AnyElement, App, ElementId, InteractiveElement as _, IntoElement,
-    ParentElement, RenderOnce, SharedString, StatefulInteractiveElement as _, StyleRefinement,
-    Styled, StyledText, Window, div, prelude::FluentBuilder as _, px, relative, rems,
+    ParentElement, RenderOnce, SharedString, StyleRefinement, Styled, StyledText, Window, div,
+    prelude::FluentBuilder as _, px, relative, rems,
 };
+use gpui_base::compat::A11yElementExt;
+use gpui_base::compat::ReduceMotionExt as _;
 
 /// The visual treatment used by a [`Marker`].
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -429,6 +431,8 @@ impl RenderOnce for MarkerContent {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use gpui_base::compat::A11yElementExt;
+    use gpui_base::compat::Role;
 
     #[test]
     fn test_marker_builder() {

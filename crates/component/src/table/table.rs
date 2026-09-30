@@ -3,6 +3,7 @@ use gpui::{
     SharedString, StyleRefinement, Styled, TextAlign, Window, div, prelude::FluentBuilder as _, px,
     relative,
 };
+use gpui_base::compat::FlexExt as _;
 use gpui_base::{
     Table as BaseTable, TableBody as BaseTableBody, TableCaption as BaseTableCaption,
     TableCell as BaseTableCell, TableHead as BaseTableHead, TableHeader as BaseTableHeader,

@@ -378,7 +378,7 @@ mod tests {
                 parent_clicks,
             }
         });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         (cx, toggles, parent_clicks)
     }
 
@@ -449,7 +449,7 @@ mod tests {
             disabled,
             focus_ring,
         });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         cx
     }
 
@@ -464,7 +464,7 @@ mod tests {
         cx.update(|window, cx| window.focus_next(cx));
         cx.update(|window, cx| {
             assert!(window.focused(cx).is_some());
-            window.draw(cx).clear(cx);
+            window.draw(cx).clear();
         });
 
         let ring = cx
@@ -485,7 +485,7 @@ mod tests {
         cx.update(|window, cx| window.focus_next(cx));
         cx.update(|window, cx| {
             assert!(window.focused(cx).is_some());
-            window.draw(cx).clear(cx);
+            window.draw(cx).clear();
         });
 
         assert!(
@@ -500,7 +500,7 @@ mod tests {
         cx.update(|window, cx| window.focus_next(cx));
         cx.update(|window, cx| {
             assert!(window.focused(cx).is_none());
-            window.draw(cx).clear(cx);
+            window.draw(cx).clear();
         });
 
         assert!(cx.debug_bounds("focus-ring").is_none());
@@ -542,7 +542,7 @@ mod tests {
                         checked,
                         disabled,
                     });
-                    cx.update(|window, cx| window.draw(cx).clear(cx));
+                    cx.update(|window, cx| window.draw(cx).clear());
 
                     let container = cx.debug_bounds("narrow-switch").unwrap();
                     let track = cx.debug_bounds("switch-bar").unwrap();
@@ -571,7 +571,7 @@ mod tests {
 
         cx.update(crate::init);
         let (_, cx) = cx.add_window_view(|_, _| LabelHarness);
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         let bounds = cx
             .debug_bounds("labeled-switch")

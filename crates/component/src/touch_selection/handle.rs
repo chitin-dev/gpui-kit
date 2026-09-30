@@ -2,8 +2,7 @@ use std::rc::Rc;
 
 use gpui::{
     App, Bounds, Hitbox, HitboxBehavior, IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent,
-    MouseUpEvent, Pixels, Point, RenderOnce, Styled as _, TouchDragEvent, TouchPhase, Window,
-    canvas, deferred,
+    MouseUpEvent, Pixels, Point, RenderOnce, Styled as _, TouchPhase, Window, canvas, deferred,
 };
 use gpui_base::{SelectionEdge, TouchHandle, TouchSelectionSnapshot};
 
@@ -98,9 +97,13 @@ impl SelectionHandles {
         );
     }
 
-    /// The drag begins on whichever handle is under the finger or pointer;
-    /// its moves and its end are routed by which end is being dragged, so
-    /// they keep coming even if that handle is not laid out for a frame.
+    /// The drag begins on whichever handle is under the pointer; its moves and
+    /// its end are routed by which end is being dragged, so they keep coming
+    /// even if that handle is not laid out for a frame.
+    ///
+    /// WGPUI dispatches no touch-gesture events, so the drag arrives as mouse
+    /// input and the phases it reports to [`DragHandler`] are named for the
+    /// touch drag this used to receive.
     fn listen(
         handles: &[LaidOutHandle],
         source: &SnapshotSource,
@@ -108,26 +111,6 @@ impl SelectionHandles {
         window: &mut Window,
     ) {
         for handle in handles {
-            // Touch: the drag is offered on the first touch, before it can
-            // become a tap, a long press or a pan.
-            window.on_mouse_event({
-                let hitbox = handle.hitbox.clone();
-                let edge = handle.edge;
-                let on_drag = on_drag.clone();
-                move |event: &TouchDragEvent, phase, window, cx| {
-                    if !phase.bubble()
-                        || event.phase != TouchPhase::Started
-                        || window.default_prevented()
-                        || !hitbox.is_hovered(window)
-                    {
-                        return;
-                    }
-                    window.prevent_default();
-                    cx.stop_propagation();
-                    on_drag(edge, TouchPhase::Started, event.position, window, cx);
-                }
-            });
-            // Mouse: the same drag for a pointer.
             window.on_mouse_event({
                 let hitbox = handle.hitbox.clone();
                 let edge = handle.edge;
@@ -151,20 +134,6 @@ impl SelectionHandles {
             let source = source.clone();
             move |window: &Window, cx: &App| source(window, cx).and_then(|s| s.dragging())
         };
-        window.on_mouse_event({
-            let on_drag = on_drag.clone();
-            let dragging = dragging.clone();
-            move |event: &TouchDragEvent, phase, window, cx| {
-                if !phase.bubble() || event.phase == TouchPhase::Started {
-                    return;
-                }
-                let Some(edge) = dragging(window, cx) else {
-                    return;
-                };
-                cx.stop_propagation();
-                on_drag(edge, event.phase, event.position, window, cx);
-            }
-        });
         window.on_mouse_event({
             let on_drag = on_drag.clone();
             let dragging = dragging.clone();

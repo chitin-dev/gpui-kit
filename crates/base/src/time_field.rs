@@ -1,12 +1,14 @@
 use crate::TestSupportExt as _;
+use crate::compat::A11yElementExt;
+use crate::compat::Role;
 use std::rc::Rc;
 
 use chrono::{NaiveTime, Timelike as _};
 use gpui::{
     AnyElement, App, Context, ElementId, Empty, Entity, EventEmitter, FocusHandle, Focusable,
     InteractiveElement, IntoElement, KeyBinding, KeyDownEvent, MouseButton, MouseDownEvent,
-    ParentElement, Render, RenderOnce, Role, SharedString, StatefulInteractiveElement,
-    StyleRefinement, Styled, Window, div, prelude::FluentBuilder as _,
+    ParentElement, Render, RenderOnce, SharedString, StatefulInteractiveElement, StyleRefinement,
+    Styled, Window, div, prelude::FluentBuilder as _,
 };
 
 use crate::{

@@ -340,7 +340,7 @@ mod tests {
             });
         });
         cx.run_until_parked();
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         let dock = measured.get().width;
         assert_eq!(
@@ -410,7 +410,7 @@ mod tests {
     #[gpui::test]
     fn dragging_the_left_handle_resizes_only_the_left_dock(cx: &mut TestAppContext) {
         let (area, cx) = area_with_side_docks(cx);
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         // The left dock is 200px wide, so its handle sits at x ∈ [198, 199).
         cx.simulate_mouse_down(
@@ -479,7 +479,7 @@ mod tests {
         cx.run_until_parked();
 
         let drag = |cx: &mut VisualTestContext, ys: &[f32]| {
-            cx.update(|window, cx| window.draw(cx).clear(cx));
+            cx.update(|window, cx| window.draw(cx).clear());
             let (first, rest) = ys.split_first().unwrap();
             cx.simulate_mouse_down(
                 point(px(400.), px(*first)),

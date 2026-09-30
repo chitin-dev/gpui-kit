@@ -5,7 +5,8 @@ use std::{
 
 use gpui::{
     AnyElement, App, Bounds, Corners, ElementId, Hsla, IntoElement, Pixels, Point, SharedString,
-    TextAlign, Window, fill, linear_color_stop, linear_gradient, point, prelude::FluentBuilder, px,
+    TextAlign, Window, fill, gradient_color_stop, linear_gradient, point, prelude::FluentBuilder,
+    px,
 };
 use gpui_component_macros::IntoPlot;
 
@@ -401,8 +402,8 @@ impl<T> SankeyChart<T> {
     /// the bounds size, the graph, the placement settings and the label lines.
     fn frame_key(&self, bounds: Bounds<Pixels>, node_labels: &[Vec<SankeyLabel>]) -> u64 {
         let mut hasher = DefaultHasher::new();
-        bounds.size.width.as_f32().to_bits().hash(&mut hasher);
-        bounds.size.height.as_f32().to_bits().hash(&mut hasher);
+        bounds.size.width.to_f32().to_bits().hash(&mut hasher);
+        bounds.size.height.to_f32().to_bits().hash(&mut hasher);
         self.nodes.len().hash(&mut hasher);
         for link in &self.links {
             link.source.hash(&mut hasher);
@@ -435,8 +436,8 @@ impl<T> SankeyChart<T> {
         node_labels: Vec<Vec<SankeyLabel>>,
         window: &mut Window,
     ) -> Option<SankeyFrame> {
-        let width = bounds.size.width.as_f32();
-        let height = bounds.size.height.as_f32();
+        let width = bounds.size.width.to_f32();
+        let height = bounds.size.height.to_f32();
 
         // First pass: only the topology (each node's `layer`) is needed to
         // measure the label margins.
@@ -536,8 +537,8 @@ impl<T> Plot for SankeyChart<T> {
         cx: &mut App,
     ) -> Vec<AnyElement> {
         self.frame = None;
-        let width = bounds.size.width.as_f32();
-        let height = bounds.size.height.as_f32();
+        let width = bounds.size.width.to_f32();
+        let height = bounds.size.height.to_f32();
         if self.nodes.is_empty() || self.links.is_empty() || width <= 0. || height <= 0. {
             return vec![];
         }
@@ -573,8 +574,8 @@ impl<T> Plot for SankeyChart<T> {
             right,
         } = &*frame;
         let (layer_count, left, right) = (*layer_count, *left, *right);
-        let width = bounds.size.width.as_f32();
-        let height = bounds.size.height.as_f32();
+        let width = bounds.size.width.to_f32();
+        let height = bounds.size.height.to_f32();
 
         let palette = [
             cx.theme().chart_1,
@@ -621,8 +622,8 @@ impl<T> Plot for SankeyChart<T> {
                         .f32(link.source_width.max(min_width))
                         .f32(link.target_width.max(min_width))
                         .finish();
-                    caches.slot(ix).get(key, bounds.origin, || {
-                        sankey_link_path(source, target, link, min_width, Point::default())
+                    caches.slot(ix).get(key, bounds.origin, |origin| {
+                        sankey_link_path(source, target, link, min_width, origin)
                     })
                 });
                 let Some(path) = path else {
@@ -638,8 +639,8 @@ impl<T> Plot for SankeyChart<T> {
                     path,
                     linear_gradient(
                         90.,
-                        linear_color_stop(colors[link.source].opacity(opacity), 0.),
-                        linear_color_stop(colors[link.target].opacity(opacity), 1.),
+                        gradient_color_stop(colors[link.source].opacity(opacity), 0.),
+                        gradient_color_stop(colors[link.target].opacity(opacity), 1.),
                     ),
                 );
             }
@@ -742,7 +743,7 @@ impl<T> Plot for SankeyChart<T> {
         _cx: &App,
     ) -> Option<TooltipState> {
         let frame = self.frame.as_ref()?;
-        let (x, y) = (position.x.as_f32(), position.y.as_f32());
+        let (x, y) = (position.x.to_f32(), position.y.to_f32());
         let node = frame.graph.nodes.iter().find(|node| {
             (node.x0..=node.x1).contains(&x) && (node.y0..=node.y1.max(node.y0 + 1.)).contains(&y)
         })?;

@@ -117,8 +117,8 @@ fn dash_segments(
     let Some(dash_array) = dash_array.filter(|dashes| !dashes.is_empty()) else {
         return vec![(start, end)];
     };
-    let length = ((end.x - start.x).as_f32().powi(2) + (end.y - start.y).as_f32().powi(2)).sqrt();
-    if length <= 0. || dash_array.iter().all(|dash| dash.as_f32() <= 0.) {
+    let length = ((end.x - start.x).to_f32().powi(2) + (end.y - start.y).to_f32().powi(2)).sqrt();
+    if length <= 0. || dash_array.iter().all(|dash| dash.to_f32() <= 0.) {
         return vec![(start, end)];
     }
     let at = |distance: f32| {
@@ -137,7 +137,7 @@ fn dash_segments(
     let mut position = 0.;
     let mut index = 0;
     while position < length {
-        let dash = dash_array[index % dash_array.len()].as_f32().max(0.);
+        let dash = dash_array[index % dash_array.len()].to_f32().max(0.);
         let next = (position + dash).min(length);
         if index % 2 == 0 && next > position {
             segments.push((at(position), at(next)));
@@ -155,7 +155,7 @@ mod tests {
     fn xs(segments: &[(Point<Pixels>, Point<Pixels>)]) -> Vec<(f32, f32)> {
         segments
             .iter()
-            .map(|(start, end)| (start.x.as_f32(), end.x.as_f32()))
+            .map(|(start, end)| (start.x.to_f32(), end.x.to_f32()))
             .collect()
     }
 
@@ -187,7 +187,7 @@ mod tests {
         );
         let ys: Vec<_> = segments
             .iter()
-            .map(|(start, end)| (start.y.as_f32(), end.y.as_f32()))
+            .map(|(start, end)| (start.y.to_f32(), end.y.to_f32()))
             .collect();
         assert_eq!(ys, vec![(0., 5.), (8., 10.), (15., 18.)]);
     }

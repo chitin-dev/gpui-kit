@@ -1,14 +1,14 @@
+use gpui_base::compat::Anchor;
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
 };
 
 use gpui::{
-    Anchor, AnyElement, App, Bounds, Context, DismissEvent, Element, ElementId, Entity,
-    FocusHandle, Focusable, GlobalElementId, Hitbox, HitboxBehavior, InspectorElementId,
-    InteractiveElement, IntoElement, LayoutId, MouseButton, MouseDownEvent, ParentElement, Pixels,
-    Point, Position, Style, StyleRefinement, Styled, Subscription, Window, anchored, deferred, div,
-    px,
+    AnyElement, App, Bounds, Context, DismissEvent, Element, ElementId, Entity, FocusHandle,
+    Focusable, GlobalElementId, Hitbox, HitboxBehavior, InspectorElementId, InteractiveElement,
+    IntoElement, LayoutId, MouseButton, MouseDownEvent, ParentElement, Pixels, Point, Position,
+    Style, StyleRefinement, Styled, Subscription, Window, anchored, deferred, div, px,
 };
 
 use crate::menu::PopupMenu;
@@ -192,7 +192,7 @@ impl DeferredMenu {
                         anchored()
                             .position(self.position)
                             .snap_to_window_with_margin(px(8.))
-                            .anchor(self.anchor)
+                            .anchor(self.anchor.to_corner())
                             .child(self.menu_view.clone()),
                     ),
             ),
@@ -633,7 +633,7 @@ mod tests {
             move |_, _| RowsRoot { clicked }
         });
         cx.update(|window, cx| {
-            window.draw(cx).clear(cx);
+            window.draw(cx).clear();
         });
 
         // Right-click the second row; the menu opens at the press position.
@@ -642,7 +642,7 @@ mod tests {
         cx.simulate_mouse_up(press, MouseButton::Right, Default::default());
         cx.run_until_parked();
         cx.update(|window, cx| {
-            window.draw(cx).clear(cx);
+            window.draw(cx).clear();
         });
 
         // Click the first item, which sits inside the menu's content padding.
@@ -674,7 +674,7 @@ mod tests {
                 clicked: Rc::new(Cell::new(0)),
             });
             cx.update(|window, cx| {
-                window.draw(cx).clear(cx);
+                window.draw(cx).clear();
             });
 
             // Right-click the first row; the menu opens and is left open.
@@ -683,7 +683,7 @@ mod tests {
             cx.simulate_mouse_up(press, MouseButton::Right, Default::default());
             cx.run_until_parked();
             cx.update(|window, cx| {
-                window.draw(cx).clear(cx);
+                window.draw(cx).clear();
             });
 
             // Close the window without dismissing the menu.
@@ -709,7 +709,7 @@ mod tests {
             move |_, _| UnfocusedRoot { frames }
         });
         cx.update(|window, cx| {
-            window.draw(cx).clear(cx);
+            window.draw(cx).clear();
             assert!(window.focused(cx).is_none());
         });
         let frames_before_open = frames.get();

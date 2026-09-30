@@ -2,6 +2,8 @@ use std::time::Duration;
 
 use gpui::{App, ElementId, Window};
 
+use crate::compat::ReduceMotionExt as _;
+
 use super::{MotionStatus, Transition, TransitionId};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

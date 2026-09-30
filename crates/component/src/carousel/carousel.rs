@@ -1,9 +1,12 @@
+use gpui_base::compat::A11yElementExt;
+use gpui_base::compat::Role;
+use gpui_base::compat::size_as_point;
 use std::{panic::Location, sync::Arc};
 
 use gpui::{
     AnyElement, App, Axis, Bounds, ClickEvent, Element, ElementId, Entity, FocusHandle, Focusable,
     GlobalElementId, InspectorElementId, InteractiveElement as _, IntoElement, LayoutId,
-    MouseButton, ParentElement, Pixels, Point, RenderOnce, Role, SharedString,
+    MouseButton, ParentElement, Pixels, Point, RenderOnce, SharedString,
     StatefulInteractiveElement as _, StyleRefinement, Styled, Subscription, Window, div,
     prelude::FluentBuilder as _, px,
 };
@@ -421,7 +424,7 @@ impl RenderOnce for CarouselContent {
                 ("carousel-content", entity_id),
                 SharedString::from(format!("offset-{motion_revision}-{geometry_revision}")),
             ),
-            target.as_f32(),
+            target.to_f32(),
             snap_spring.with_travel(!interacting),
             window,
             cx,
@@ -988,7 +991,7 @@ fn snap_offset(handle: &gpui::ScrollHandle, axis: Axis, index: usize) -> Option<
     } else {
         viewport.top() - item.top()
     };
-    let max = axis_value(handle.max_offset(), axis).max(Pixels::ZERO);
+    let max = axis_value(size_as_point(handle.max_offset()), axis).max(Pixels::ZERO);
     Some(target.clamp(-max, Pixels::ZERO))
 }
 
@@ -1066,7 +1069,7 @@ mod tests {
             let state = state.clone();
             move |_, _| KeyboardHarness { state }
         });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
 
         cx.update(|window, cx| window.focus_next(cx));
         let (primary, secondary) = if axis.is_horizontal() {
@@ -1150,7 +1153,7 @@ mod tests {
                 outer_actions,
             }
         });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         cx.update(|window, cx| window.focus_next(cx));
 
         cx.simulate_keystrokes("down");
@@ -1180,7 +1183,7 @@ mod tests {
                 let state = state.clone();
                 move |_, _| KeyboardHarness { state }
             });
-            cx.update(|window, cx| window.draw(cx).clear(cx));
+            cx.update(|window, cx| window.draw(cx).clear());
 
             let (track, first_item, frame_size) = state.read_with(cx, |state, _| {
                 let handle = state.scroll_handle();
@@ -1211,7 +1214,7 @@ mod tests {
             let state = state.clone();
             move |_, _| KeyboardHarness { state }
         });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         assert!(cx.update(|window, cx| window.focused(cx).is_none()));
 
         cx.simulate_click(point(px(50.), px(50.)), gpui::Modifiers::default());
@@ -1258,7 +1261,7 @@ mod tests {
             let state = state.clone();
             move |_, _| ControlsHarness { state }
         });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         let selected =
             |cx: &mut VisualTestContext| state.read_with(cx, |state, _| state.selected_index());
         let root_focused = |cx: &mut VisualTestContext| {
@@ -1276,7 +1279,7 @@ mod tests {
         cx.simulate_keystrokes("left");
         cx.update(|window, cx| window.focus_next(cx));
         cx.update(|window, cx| window.focus_next(cx));
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         let keystroke = gpui::Keystroke::parse("enter").unwrap();
         cx.simulate_event(gpui::KeyDownEvent {
             keystroke: keystroke.clone(),

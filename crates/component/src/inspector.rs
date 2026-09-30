@@ -48,15 +48,22 @@ pub(crate) fn init(cx: &mut App) {
         });
     });
 
-    cx.register_inspector_element(|window, cx| {
-        let div_inspector = cx.new(|cx| DivInspector::new(window, cx));
-        move |id, state: &DivInspectorState, window: &mut Window, cx: &mut App| {
+    // WGPUI calls the renderer once per inspected element per frame and hands
+    // it the element's state directly, where GPUI first called a factory that
+    // could hold one inspector per window. The entity is therefore looked up
+    // through `use_keyed_state` instead: it is built once per window and kept,
+    // so the panels hold their scroll position and edits between frames.
+    cx.register_inspector_element(
+        |id: InspectorElementId, state: &DivInspectorState, window: &mut Window, cx: &mut App| {
+            let div_inspector = window.use_keyed_state("div-inspector", cx, |window, cx| {
+                DivInspector::new(window, cx)
+            });
             div_inspector.update(cx, |this, cx| {
                 this.update_inspected_element(id, state.clone(), window, cx);
                 this.render(window, cx).into_any_element()
             })
-        }
-    });
+        },
+    );
 
     cx.set_inspector_renderer(Box::new(render_inspector));
 }

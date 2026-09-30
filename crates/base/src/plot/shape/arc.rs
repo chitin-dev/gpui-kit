@@ -102,8 +102,8 @@ impl Arc {
         let r1 = self.outer_radius.max(0.);
 
         // Calculate the center point.
-        let center_x = bounds.origin.x.as_f32() + bounds.size.width.as_f32() / 2.;
-        let center_y = bounds.origin.y.as_f32() + bounds.size.height.as_f32() / 2.;
+        let center_x = bounds.origin.x.to_f32() + bounds.size.width.to_f32() / 2.;
+        let center_y = bounds.origin.y.to_f32() + bounds.size.height.to_f32() / 2.;
 
         // Angle difference.
         if r1 < EPSILON || da.abs() < EPSILON {
@@ -194,8 +194,8 @@ impl Arc {
         position: Point<f32>,
         bounds: &Bounds<Pixels>,
     ) -> bool {
-        let dx = position.x - bounds.size.width.as_f32() / 2.;
-        let dy = position.y - bounds.size.height.as_f32() / 2.;
+        let dx = position.x - bounds.size.width.to_f32() / 2.;
+        let dy = position.y - bounds.size.height.to_f32() / 2.;
         let radius = dx.hypot(dy);
         let r0 = self.inner_radius.max(0.);
         let r1 = self.outer_radius.max(0.);
@@ -223,8 +223,8 @@ impl Arc {
         window: &mut Window,
     ) {
         let key = ShapeKey::new((
-            bounds.size.width.as_f32().to_bits(),
-            bounds.size.height.as_f32().to_bits(),
+            bounds.size.width.to_f32().to_bits(),
+            bounds.size.height.to_f32().to_bits(),
         ))
         .f32(arc.start_angle)
         .f32(arc.end_angle)
@@ -232,8 +232,7 @@ impl Arc {
         .f32(self.inner_radius)
         .f32(self.outer_radius)
         .finish();
-        let local = Bounds::new(Point::default(), bounds.size);
-        let path = cache.get(key, bounds.origin, || self.path(arc, &local));
+        let path = cache.get(key, bounds.origin, |_| self.path(arc, bounds));
         if let Some(path) = path {
             window.paint_path(path, fill);
         }

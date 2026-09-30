@@ -162,11 +162,15 @@ impl RenderOnce for Slider {
             .clone()
             .and_then(|bg| bg.color())
             .unwrap_or(cx.theme().tokens.slider_bar.into());
+        // WGPUI keeps a style's text refinement as an `Option`, and its text
+        // colour is a `TextColor` rather than the `Hsla` a background takes, so
+        // the solid colour is read back out of it.
         let thumb_bg: Background = self
             .style
             .text
-            .color
-            .map(Into::into)
+            .as_ref()
+            .and_then(|text| text.color)
+            .map(|color| color.to_hsla().into())
             .unwrap_or_else(|| cx.theme().tokens.slider_thumb.into());
         let corner_radii = self.style.corner_radii.clone();
         // The track is a pill by default, and square when the theme squares its
@@ -339,7 +343,7 @@ mod tests {
         let state = cx.new(|_| SliderState::new());
         let result = state.clone();
         let (_, cx) = cx.add_window_view(move |_, _| Harness { state, disabled });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         (cx, result)
     }
 

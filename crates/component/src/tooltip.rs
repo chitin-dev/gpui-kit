@@ -227,7 +227,7 @@ impl ComponentTooltip {
 // ── Internal managed tooltip trait ──────────────────────────────────────────
 
 pub(crate) trait ManagedTooltipExt:
-    StatefulInteractiveElement + crate::ElementExt + Sized
+    StatefulInteractiveElement + ParentElement + crate::ElementExt + Sized
 {
     fn managed_tooltip(
         self,
@@ -292,4 +292,4 @@ pub(crate) trait ManagedTooltipExt:
     }
 }
 
-impl<E: StatefulInteractiveElement + crate::ElementExt> ManagedTooltipExt for E {}
+impl<E: StatefulInteractiveElement + ParentElement + crate::ElementExt> ManagedTooltipExt for E {}

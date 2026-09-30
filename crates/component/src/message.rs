@@ -1,8 +1,8 @@
 use gpui::{
     AnyElement, App, ElementId, InteractiveElement as _, IntoElement, ParentElement, RenderOnce,
-    StatefulInteractiveElement as _, StyleRefinement, Styled, Window, prelude::FluentBuilder as _,
-    relative, rems,
+    StyleRefinement, Styled, Window, prelude::FluentBuilder as _, relative, rems,
 };
+use gpui_base::compat::A11yElementExt;
 
 use crate::{ActiveTheme as _, RoleOverride, StyledExt as _, bubble::Bubble, h_flex, v_flex};
 
@@ -509,6 +509,8 @@ impl RenderOnce for MessageFooter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use gpui_base::compat::A11yElementExt;
+    use gpui_base::compat::Role;
 
     #[test]
     fn test_message_builder() {

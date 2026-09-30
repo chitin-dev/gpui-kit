@@ -1547,15 +1547,15 @@ impl ContainerPlan {
 /// out by flex and takes the leftover, so scaling only the constrained ones
 /// would move a divider nothing asked to move.
 fn scale_sizes_to(container: Pixels, sizes: &[Option<Pixels>]) -> Vec<Option<Pixels>> {
-    let total: f32 = sizes.iter().flatten().map(|size| size.as_f32()).sum();
+    let total: f32 = sizes.iter().flatten().map(|size| size.to_f32()).sum();
     if container <= px(0.) || total <= 0. || sizes.iter().any(Option::is_none) {
         return sizes.to_vec();
     }
 
-    let scale = container.as_f32() / total;
+    let scale = container.to_f32() / total;
     sizes
         .iter()
-        .map(|size| size.map(|size| px(size.as_f32() * scale)))
+        .map(|size| size.map(|size| px(size.to_f32() * scale)))
         .collect()
 }
 
@@ -2500,7 +2500,7 @@ mod tests {
         cx.run_until_parked();
         assert_eq!(events.get(), 1);
         let measured = cx.read(|cx| area.read(cx).splits[&root].entity.read(cx).sizes().clone());
-        let share = measured[0].as_f32() / (measured[0].as_f32() + measured[1].as_f32());
+        let share = measured[0].to_f32() / (measured[0].to_f32() + measured[1].to_f32());
         assert!((share - 0.25).abs() < 0.01, "measured {measured:?}");
 
         cx.update(|window, cx| {
@@ -2552,7 +2552,7 @@ mod tests {
         let sizes = cx.read(|cx| area.read(cx).splits[&root].entity.read(cx).sizes().clone());
 
         assert_eq!(sizes.len(), 2, "the drop splits the center in two");
-        let (left, right) = (sizes[0].as_f32(), sizes[1].as_f32());
+        let (left, right) = (sizes[0].to_f32(), sizes[1].to_f32());
         assert!(
             (left - right).abs() <= (left + right) * 0.02,
             "the two halves must be within 2% of each other, got {left} and {right}"
@@ -2615,7 +2615,7 @@ mod tests {
                 .clone()
         });
         assert_eq!(sizes.len(), 2, "the drop splits the group in two");
-        let (top, bottom) = (sizes[0].as_f32(), sizes[1].as_f32());
+        let (top, bottom) = (sizes[0].to_f32(), sizes[1].to_f32());
         assert!(
             (top - bottom).abs() <= (top + bottom) * 0.02,
             "the two halves must be within 2% of each other, got {top} and {bottom}"
@@ -2674,8 +2674,8 @@ mod tests {
         });
         let sizes = cx.read(|cx| area.read(cx).splits[&root].entity.read(cx).sizes().clone());
         assert_eq!(sizes.len(), 3, "three slots side by side");
-        let dropped = sizes[2].as_f32();
-        let neighbour = sizes[1].as_f32();
+        let dropped = sizes[2].to_f32();
+        let neighbour = sizes[1].to_f32();
         assert!(
             (dropped - neighbour).abs() <= (dropped + neighbour) * 0.02,
             "the dropped panel splits its neighbour evenly, got neighbour {neighbour} and dropped {dropped}"
@@ -2745,7 +2745,7 @@ mod tests {
             let sizes = cx.read(|cx| area.read(cx).splits[&split].entity.read(cx).sizes().clone());
 
             assert_eq!(sizes.len(), 2, "{placement:?}: the drop splits in two");
-            let (first, second) = (sizes[0].as_f32(), sizes[1].as_f32());
+            let (first, second) = (sizes[0].to_f32(), sizes[1].to_f32());
             assert!(
                 (first - second).abs() <= (first + second) * 0.02,
                 "{placement:?}: expected halves, got {first} and {second}"
@@ -2793,7 +2793,7 @@ mod tests {
             .first()
             .copied()
             .expect("the split has slots")
-            .as_f32();
+            .to_f32();
         assert!(
             (fixed - 200.).abs() <= 4.,
             "the fixed slot keeps its 200px instead of being rescaled by the \

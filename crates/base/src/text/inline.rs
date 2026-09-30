@@ -18,6 +18,7 @@ use gpui::{
 
 use crate::{
     GlobalState, TextSelection,
+    compat::line_layouts,
     input::Selection,
     text::TextViewMultiClickKind,
     text::node::LinkMark,
@@ -687,7 +688,7 @@ impl Inline {
         mask_bounds: Bounds<Pixels>,
     ) -> Vec<Bounds<Pixels>> {
         let origin = text_layout.bounds().origin;
-        let lines = text_layout.line_layouts();
+        let lines = line_layouts(text_layout);
         let row_count: usize = lines
             .iter()
             .map(|line| line.wrap_boundaries.len() + 1)
@@ -1189,7 +1190,7 @@ fn glyph_boxes(text_layout: &TextLayout, align: TextAlign, align_width: Pixels) 
     let mut boxes = Vec::new();
     let mut row = 0;
     let mut line_start = 0;
-    for line in text_layout.line_layouts() {
+    for line in line_layouts(text_layout) {
         let layout = &line.unwrapped_layout;
         let glyphs = layout
             .runs

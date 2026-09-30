@@ -1,4 +1,6 @@
 use crate::TestSupportExt as _;
+use crate::compat::A11yElementExt;
+use crate::compat::Role;
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -6,7 +8,7 @@ use std::{
 
 use gpui::{
     AnyElement, App, ClickEvent, FocusHandle, InteractiveElement as _, IntoElement, KeyBinding,
-    MouseButton, ParentElement, Pixels, RenderOnce, Role, StatefulInteractiveElement as _,
+    MouseButton, ParentElement, Pixels, RenderOnce, StatefulInteractiveElement as _,
     StyleRefinement, Styled, Window, anchored, deferred, div, point, prelude::FluentBuilder as _,
     px,
 };
@@ -648,6 +650,8 @@ impl RenderOnce for Dialog {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::compat::A11yElementExt;
+    use crate::compat::Role;
     use gpui::{Context, Render, point};
     use std::{cell::RefCell, rc::Rc};
 

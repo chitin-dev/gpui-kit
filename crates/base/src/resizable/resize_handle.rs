@@ -7,6 +7,7 @@ use gpui::{
     div, prelude::FluentBuilder as _, px,
 };
 
+use crate::compat::HitboxExt as _;
 use crate::{AxisExt as _, theme::ActiveTheme as _};
 
 pub(crate) const HANDLE_PADDING: Pixels = px(4.);

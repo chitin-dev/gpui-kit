@@ -1,6 +1,7 @@
+use crate::compat::OngoingScroll;
 use gpui::{
-    App, ClickEvent, InteractiveElement, OngoingScroll, Pixels, Point, Stateful,
-    StatefulInteractiveElement, TouchPhase, Window,
+    App, ClickEvent, InteractiveElement, Pixels, Point, Stateful, StatefulInteractiveElement,
+    TouchPhase, Window,
 };
 
 /// gpui delimits scroll gestures with `std::time::Instant`, which is
@@ -36,7 +37,12 @@ pub trait InteractiveElementExt: InteractiveElement {
         }
         #[cfg(not(target_family = "wasm"))]
         {
-            self.restrict_scroll_to_axis()
+            // WGPUI keeps `restrict_scroll_to_axis` as a style property but
+            // publishes no builder for it, so the flag is written where the
+            // builder would have put it.
+            let mut element = self;
+            element.interactivity().base_style.restrict_scroll_to_axis = Some(true);
+            element
         }
     }
 

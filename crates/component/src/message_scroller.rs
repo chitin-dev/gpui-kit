@@ -1,11 +1,15 @@
+use gpui_base::compat::A11yElementExt;
+use gpui_base::compat::Role;
 use std::{ops::Range, time::Duration};
 
 use gpui::{
-    AnyElement, App, Axis, Context, ElementId, Entity, FollowMode, Hsla, InteractiveElement as _,
-    IntoElement, ListAlignment, ListOffset, ListState, ParentElement as _, RenderOnce, Role,
-    SharedString, StatefulInteractiveElement as _, StyleRefinement, Styled, Window, div,
-    linear_color_stop, linear_gradient, list, prelude::FluentBuilder as _, px, rems,
+    AnyElement, App, Axis, Context, ElementId, Entity, Hsla, InteractiveElement as _, IntoElement,
+    ListAlignment, ListOffset, ListState, ParentElement as _, RenderOnce, SharedString,
+    StyleRefinement, Styled, Window, div, gradient_color_stop, linear_gradient, list,
+    prelude::FluentBuilder as _, px, rems,
 };
+use gpui_base::compat::ListStateExt as _;
+use gpui_base::compat::size_as_point;
 use gpui_base::motion::{Transition, transition};
 
 use crate::{ActiveTheme as _, Disableable as _, IconName, StyledExt as _, button::Button};
@@ -28,14 +32,19 @@ pub struct MessageScrollerState {
 }
 
 impl MessageScrollerState {
-    /// Create a state for `item_count` rows and enable tail following.
+    /// Create a state for `item_count` rows, following the tail.
     ///
     /// The constructor receives the entity context so the list's scroll
     /// handler can safely defer its entity update until GPUI has released the
     /// list's internal borrow.
+    ///
+    /// Tail following is expressed as `ListAlignment::Bottom` rather than as a
+    /// follow-mode latch, because that is where WGPUI keeps it: a bottom-aligned
+    /// list stores no scroll offset while it sits at its end and re-pins itself
+    /// there as rows arrive, which is the behaviour a chat log needs. See
+    /// [`ListStateExt`].
     pub fn new(item_count: usize, cx: &mut Context<Self>) -> Self {
-        let list_state = ListState::new(item_count, ListAlignment::Top, LIST_OVERDRAW);
-        list_state.set_follow_mode(FollowMode::Tail);
+        let list_state = ListState::new(item_count, ListAlignment::Bottom, LIST_OVERDRAW);
 
         let weak_state = cx.weak_entity();
         list_state.set_scroll_handler(move |_, _, cx| {
@@ -56,7 +65,7 @@ impl MessageScrollerState {
 
     /// Return whether the user has scrolled away from the latest content.
     pub fn is_scrolled_up(&self) -> bool {
-        self.list_state.max_offset_for_scrollbar().y > px(0.)
+        size_as_point(self.list_state.max_offset_for_scrollbar()).y > px(0.)
             && !self.list_state.is_following_tail()
             && !self.list_state.is_scrolled_to_end().unwrap_or(false)
     }
@@ -67,9 +76,11 @@ impl MessageScrollerState {
     }
 
     /// Reset the list to `item_count` rows.
+    ///
+    /// A reset clears the scroll offset, which for a bottom-aligned list is the
+    /// tail latch itself, so the list resumes following without more being said.
     pub fn reset(&mut self, item_count: usize, cx: &mut Context<Self>) {
         self.list_state.reset(item_count);
-        self.list_state.set_follow_mode(FollowMode::Tail);
         cx.notify();
     }
 
@@ -151,7 +162,6 @@ impl MessageScrollerState {
 
     /// Resume tail following and scroll to the latest row.
     pub fn scroll_to_end(&mut self, cx: &mut Context<Self>) {
-        self.list_state.set_follow_mode(FollowMode::Tail);
         self.list_state.scroll_to_end();
         cx.notify();
     }
@@ -385,8 +395,8 @@ impl RenderOnce for MessageScroller {
                             .opacity(bottom_fade_visibility)
                             .bg(linear_gradient(
                                 180.,
-                                linear_color_stop(color.opacity(0.), 0.),
-                                linear_color_stop(color, 1.),
+                                gradient_color_stop(color.opacity(0.), 0.),
+                                gradient_color_stop(color, 1.),
                             )),
                     )
                 },

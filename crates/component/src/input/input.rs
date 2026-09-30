@@ -1,11 +1,12 @@
+use gpui_base::compat::A11yElementExt;
+use gpui_base::compat::{AccessibleAction, Role};
 use std::rc::Rc;
 
 use gpui::prelude::FluentBuilder as _;
 use gpui::{
-    AccessibleAction, AnyElement, App, DefiniteLength, Edges, ElementId, Entity, Hsla,
-    InteractiveElement as _, IntoElement, ParentElement as _, Rems, RenderOnce, Role, SharedString,
-    StatefulInteractiveElement as _, StyleRefinement, Styled, TextAlign, TouchPhase, Window, div,
-    px, relative,
+    AnyElement, App, DefiniteLength, Edges, ElementId, Entity, Hsla, InteractiveElement as _,
+    IntoElement, ParentElement as _, Rems, RenderOnce, SharedString, StyleRefinement, Styled,
+    TextAlign, TouchPhase, Window, div, px, relative,
 };
 
 use crate::button::{Button, ButtonRounded, ButtonVariants as _};
@@ -456,7 +457,7 @@ impl Input {
         .handles(move |edge, phase, position, _, cx| match phase {
             TouchPhase::Started => drag_state.begin_edge_drag(edge, position, cx),
             TouchPhase::Moved => drag_state.update_edge_drag(position, cx),
-            TouchPhase::Ended | TouchPhase::Cancelled => drag_state.end_edge_drag(cx),
+            TouchPhase::Ended => drag_state.end_edge_drag(cx),
         })
         .items(items)
         .into_elements(window, cx)
@@ -477,21 +478,6 @@ impl Input {
                 let state = state.clone();
                 move |_, window, cx| state.toggle_masked(window, cx)
             })
-    }
-
-    fn handle_accessibility_set_value(
-        state: &TextInputState,
-        data: Option<&gpui::accesskit::ActionData>,
-        window: &mut Window,
-        cx: &mut App,
-    ) {
-        let Some(gpui::accesskit::ActionData::Value(value)) = data else {
-            return;
-        };
-        if !state.presentation(cx).is_editable() {
-            return;
-        }
-        state.replace_all(value.to_string(), window, cx);
     }
 
     fn handle_accessibility_focus(state: &TextInputState, window: &mut Window, cx: &mut App) {
@@ -524,7 +510,14 @@ impl Styled for Input {
 impl RenderOnce for Input {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         const LINE_HEIGHT: Rems = Rems(1.25);
-        let text_align = self.style.text.text_align.unwrap_or(TextAlign::Left);
+        // WGPUI keeps a style's text refinement as an `Option`, absent meaning
+        // the element says nothing and the window's alignment stands.
+        let text_align = self
+            .style
+            .text
+            .as_ref()
+            .and_then(|text| text.text_align)
+            .unwrap_or(TextAlign::Left);
         let state = self.state.clone();
         state.install_token_presentation(
             Some(self.token_renderer.unwrap_or_else(|| {
@@ -665,10 +658,10 @@ impl RenderOnce for Input {
         let disabled = self.disabled;
         let is_multi_line = presentation.is_multi_line();
         let accessibility_role = accessibility_role(is_multi_line, content_type, self.role);
-        let accessibility_state = state.clone();
-        // Tests read the same accessibility value as assistive technology.
-        // Avoid materializing the rope in normal builds without a client.
-        let accessibility_value = ((window.is_a11y_active() || cfg!(feature = "test-support"))
+        // WGPUI carries no "a client is attached" flag, because it publishes no
+        // tree for a client to attach to. The value is therefore materialized
+        // only under test-support, where the tests read the same policy.
+        let accessibility_value = (cfg!(feature = "test-support")
             && exposes_accessibility_value(presentation.is_masked(), content_type))
         .then(|| state.text(cx).to_string());
         let input_focused =
@@ -750,11 +743,6 @@ impl RenderOnce for Input {
             .on_a11y_action(AccessibleAction::Focus, {
                 let state = state.clone();
                 move |_, window, cx| Self::handle_accessibility_focus(&state, window, cx)
-            })
-            .when(presentation.is_editable(), |this| {
-                this.on_a11y_action(AccessibleAction::SetValue, move |data, window, cx| {
-                    Self::handle_accessibility_set_value(&accessibility_state, data, window, cx);
-                })
             })
             .flex()
             .size_full()
@@ -839,6 +827,7 @@ impl RenderOnce for Input {
 mod tests {
     use super::*;
     use crate::input::AnyInputState;
+    use gpui_base::compat::{AccessibleAction, Role};
 
     #[test]
     fn content_types_map_to_accessibility_roles() {
@@ -1058,7 +1047,7 @@ mod tests {
             Input::handle_accessibility_set_value(&base, None, window, cx);
             Input::handle_accessibility_focus(&base, window, cx);
             assert!(base.presentation(cx).focus_handle().is_focused(window));
-            window.draw(cx).clear(cx);
+            window.draw(cx).clear();
         });
         assert_eq!(state.read_with(cx, |state, _| state.value()), "initial");
 
@@ -1081,7 +1070,7 @@ mod tests {
             cx.update(|window, cx| {
                 base.set_disabled(disabled, cx);
                 base.set_readonly(!disabled, cx);
-                window.blur(cx);
+                window.blur();
                 Input::handle_accessibility_focus(&base, window, cx);
                 assert_eq!(
                     base.presentation(cx).focus_handle().is_focused(window),
@@ -1097,14 +1086,14 @@ mod tests {
             base.set_disabled(false, cx);
             base.set_readonly(false, cx);
             Input::handle_accessibility_focus(&base, window, cx);
-            window.draw(cx).clear(cx);
+            window.draw(cx).clear();
             window.dispatch_action(Box::new(super::super::Undo), cx);
         });
         assert_eq!(state.read_with(cx, |state, _| state.value()), "initial");
         cx.update(|window, cx| {
             state.update(cx, |state, cx| state.set_masked(true, window, cx));
             Input::handle_accessibility_set_value(&base, Some(&action), window, cx);
-            window.draw(cx).clear(cx);
+            window.draw(cx).clear();
         });
         assert_eq!(state.read_with(cx, |state, _| state.value()), "updated🦀");
         assert_eq!(*captured.lock().unwrap(), Some((None, true)));

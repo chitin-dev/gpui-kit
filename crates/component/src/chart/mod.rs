@@ -486,7 +486,7 @@ impl PointAxes {
         let plot = self.plot_bounds(bounds, height);
         let mut rows = self.tick_positions(height);
         rows.pop();
-        let width = plot.size.width.as_f32();
+        let width = plot.size.width.to_f32();
         let columns: Vec<f32> = (0..self.grid_columns)
             .map(|i| width * i as f32 / self.grid_columns as f32)
             .collect();

@@ -1,8 +1,10 @@
+use gpui_base::compat::A11yElementExt;
+use gpui_base::compat::Role;
 use std::rc::Rc;
 
 use gpui::{
     App, ClickEvent, ElementId, InteractiveElement as _, IntoElement, ParentElement, RenderOnce,
-    Role, SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window, div,
+    SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window, div,
     prelude::FluentBuilder as _,
 };
 

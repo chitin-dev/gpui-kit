@@ -5,10 +5,11 @@ use gpui::{
     InteractiveElement as _, IntoElement, MouseButton, ObjectFit, ParentElement, Path, PathBuilder,
     Pixels, Refineable as _, RenderOnce, ScrollHandle, SharedString,
     StatefulInteractiveElement as _, StyleRefinement, Styled, StyledImage as _, Window, black,
-    canvas, div, img, linear_color_stop, linear_gradient, point, prelude::FluentBuilder as _, px,
+    canvas, div, gradient_color_stop, img, linear_gradient, point, prelude::FluentBuilder as _, px,
     relative, rems, white,
 };
 use gpui_base::{
+    compat::size_as_point,
     is_mobile,
     motion::{Transition, transition},
 };
@@ -548,9 +549,9 @@ fn upload_bar(percent: f32, radius: Pixels, color: Hsla) -> impl IntoElement {
 /// sits inside the border; only the corner radius shrinks by the border width.
 fn upload_bar_path(bounds: Bounds<Pixels>, percent: f32, radius: Pixels) -> Option<Path<Pixels>> {
     const STEPS: usize = 6;
-    let width = bounds.size.width.as_f32();
-    let height = bounds.size.height.as_f32();
-    let radius = (radius.as_f32() - CARD_BORDER).clamp(0., width.min(height) / 2.);
+    let width = bounds.size.width.to_f32();
+    let height = bounds.size.height.to_f32();
+    let radius = (radius.to_f32() - CARD_BORDER).clamp(0., width.min(height) / 2.);
     let inner_left = 0.;
     let inner_right = width;
     let inner_bottom = height;
@@ -1307,7 +1308,7 @@ impl RenderOnce for AttachmentGroup {
                 scroll.update(cx, |scroll, _| scroll.primed = true);
                 window.on_next_frame(move |_, cx| cx.notify(view_id));
             }
-            let max = handle.max_offset().x;
+            let max = size_as_point(handle.max_offset()).x;
             // Scrolling right makes the offset negative.
             let offset = handle.offset().x;
             let scrollable = max > px(1.);
@@ -1364,8 +1365,8 @@ impl RenderOnce for AttachmentGroup {
                 .opacity(opacity)
                 .bg(linear_gradient(
                     90.,
-                    linear_color_stop(from, 0.),
-                    linear_color_stop(to, 1.),
+                    gradient_color_stop(from, 0.),
+                    gradient_color_stop(to, 1.),
                 ))
         };
 
@@ -1744,7 +1745,7 @@ mod tests {
                     action_clicks,
                 }
             });
-            cx.update(|window, cx| window.draw(cx).clear(cx));
+            cx.update(|window, cx| window.draw(cx).clear());
 
             // A click on an action must not also fire the whole-card handler.
             cx.simulate_click(point(px(20.), px(30.)), Modifiers::default());
@@ -1796,7 +1797,7 @@ mod tests {
                 let retries = retries.clone();
                 move |_, _| FailedMediaHarness { retry, retries }
             });
-            cx.update(|window, cx| window.draw(cx).clear(cx));
+            cx.update(|window, cx| window.draw(cx).clear());
             (cx, retries)
         }
 

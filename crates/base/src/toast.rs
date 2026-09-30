@@ -1,4 +1,6 @@
 use crate::TestSupportExt as _;
+use crate::compat::A11yElementExt;
+use crate::compat::{Anchor, Role};
 #[cfg(not(target_family = "wasm"))]
 use std::time::Instant;
 use std::{cell::RefCell, collections::VecDeque, rc::Rc, time::Duration};
@@ -6,10 +8,9 @@ use std::{cell::RefCell, collections::VecDeque, rc::Rc, time::Duration};
 use web_time::Instant;
 
 use gpui::{
-    Anchor, AnyElement, App, Div, ElementId, FocusHandle, InteractiveElement, Interactivity,
-    IntoElement, MouseMoveEvent, ParentElement, Pixels, RenderOnce, Role, Stateful,
-    StatefulInteractiveElement, StyleRefinement, Styled, Window, canvas, div,
-    prelude::FluentBuilder as _, px,
+    AnyElement, App, Div, ElementId, FocusHandle, InteractiveElement, Interactivity, IntoElement,
+    MouseMoveEvent, ParentElement, Pixels, RenderOnce, Stateful, StatefulInteractiveElement,
+    StyleRefinement, Styled, Window, canvas, div, prelude::FluentBuilder as _, px,
 };
 
 use crate::{
@@ -662,6 +663,8 @@ impl RenderOnce for Toast {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::compat::A11yElementExt;
+    use crate::compat::{Anchor, Role};
     use gpui::{Element as _, accesskit, point};
 
     #[test]

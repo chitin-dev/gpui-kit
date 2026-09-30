@@ -1,8 +1,10 @@
+use crate::compat::A11yElementExt;
+use crate::compat::Role;
 use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ClickEvent, Div, ElementId, InteractiveElement, Interactivity, IntoElement,
-    MouseButton, ParentElement, Refineable as _, RenderOnce, Role, SharedString,
+    MouseButton, ParentElement, Refineable as _, RenderOnce, SharedString,
     StatefulInteractiveElement, StyleRefinement, Styled, Window, div, prelude::FluentBuilder as _,
     relative,
 };
@@ -237,6 +239,8 @@ impl RenderOnce for Tabs {
 mod tests {
     use super::*;
     use crate::ElementExt as _;
+    use crate::compat::A11yElementExt;
+    use crate::compat::Role;
     use std::{
         cell::Cell,
         rc::Rc,
@@ -244,7 +248,7 @@ mod tests {
     };
 
     use gpui::{
-        Context, Element as _, Modifiers, Render, Role, VisualTestContext, accesskit, canvas, hsla,
+        Context, Element as _, Modifiers, Render, VisualTestContext, accesskit, canvas, hsla,
         point, px,
     };
 

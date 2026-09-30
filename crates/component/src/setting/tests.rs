@@ -79,7 +79,7 @@ fn setup(cx: &mut TestAppContext) -> (Entity<SettingsHost>, &mut VisualTestConte
 
 fn draw(cx: &mut VisualTestContext) {
     cx.run_until_parked();
-    cx.update(|window, cx| window.draw(cx).clear(cx));
+    cx.update(|window, cx| window.draw(cx).clear());
 }
 
 fn search(host: &Entity<SettingsHost>, query: &str, cx: &mut VisualTestContext) {

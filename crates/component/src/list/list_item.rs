@@ -5,6 +5,7 @@ use gpui::{
     StatefulInteractiveElement, StyleRefinement, Styled, Window, div, prelude::FluentBuilder as _,
 };
 use gpui_base::TestSupportExt as _;
+use gpui_base::compat::A11yElementExt;
 use smallvec::SmallVec;
 use std::collections::HashMap;
 

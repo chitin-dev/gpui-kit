@@ -1,13 +1,12 @@
+use crate::compat::ReduceMotionExt as _;
 #[cfg(not(target_family = "wasm"))]
+use crate::compat::{SpringConfig, SpringState, SpringTarget};
 use std::time::Instant;
 use std::{rc::Rc, time::Duration};
 #[cfg(target_family = "wasm")]
 use web_time::Instant;
 
-use gpui::{
-    App, Bounds, ElementId, Pixels, SharedString, Size, SpringConfig, SpringState, SpringTarget,
-    Window,
-};
+use gpui::{App, Bounds, ElementId, Pixels, SharedString, Size, Window};
 
 use crate::animation::{Lerp, ease_out_cubic};
 

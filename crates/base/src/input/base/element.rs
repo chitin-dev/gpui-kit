@@ -1,4 +1,7 @@
+use crate::compat::A11yElementExt;
+use crate::compat::{AccessibleAction, Role};
 use crate::input::{InputExtras as _, InputModeKind};
+use crate::paint_shaped_line;
 use gpui::Corners;
 use gpui::Half;
 use gpui::{
@@ -7,9 +10,9 @@ use gpui::{
 };
 use gpui::{
     HighlightStyle, Hitbox, HitboxBehavior, Hsla, InteractiveElement, IntoElement, LayoutId,
-    LongPressEvent, MouseButton, MouseMoveEvent, MouseUpEvent, ParentElement as _, Path, Pixels,
-    Point, Position, ShapedLine, SharedString, Size, Style, Styled as _, TextAlign, TextRun,
-    TextStyle, TouchDragEvent, TouchPhase, UnderlineStyle, Window, fill, point, px, relative, size,
+    MouseButton, MouseMoveEvent, MouseUpEvent, ParentElement as _, Path, Pixels, Point, Position,
+    ShapedLine, SharedString, Size, Style, Styled as _, TextAlign, TextRun, TextStyle,
+    UnderlineStyle, Window, fill, point, px, relative, size,
 };
 use ropey::Rope;
 use smallvec::SmallVec;
@@ -440,44 +443,15 @@ impl<M: InputModeKind> TextElement<M> {
         self
     }
 
-    fn paint_mouse_listeners(&mut self, hitbox: &Hitbox, window: &mut Window, _: &mut App) {
-        // Every touch is offered as a drag first; that is how a tap's mouse
-        // events are later told apart from a mouse's.
-        window.on_mouse_event(move |event: &TouchDragEvent, phase, _, cx| {
-            if phase.capture() && event.phase == TouchPhase::Started {
-                crate::GlobalState::note_touch(cx);
-            }
-        });
-
-        // A long press is touch's way to select: the word under the finger,
-        // then whatever the finger sweeps over. Claiming it keeps the moves
-        // out of the pan recognizer, so the input does not scroll instead.
-        window.on_mouse_event({
-            let state = self.state.clone();
-            let hitbox = hitbox.clone();
-            move |event: &LongPressEvent, phase, window, cx| {
-                if !phase.bubble() {
-                    return;
-                }
-                if event.phase == TouchPhase::Started {
-                    if window.default_prevented() || !hitbox.is_hovered(window) {
-                        return;
-                    }
-                    if !state.update(cx, |state, cx| state.on_long_press(event, window, cx)) {
-                        return;
-                    }
-                    window.capture_long_press(&state);
-                } else if !window.has_long_press_capture(&state) {
-                    return;
-                } else {
-                    state.update(cx, |state, cx| {
-                        state.on_long_press(event, window, cx);
-                    });
-                }
-                window.prevent_default();
-                cx.stop_propagation();
-            }
-        });
+    fn paint_mouse_listeners(&mut self, window: &mut Window, _: &mut App) {
+        // A touch is listened for as `TouchDragEvent` and held as
+        // `LongPressEvent` in GPUI. WGPUI has neither event, and neither can be
+        // rebuilt here: `MouseEvent` is sealed behind a module GPUI does not
+        // re-export, so no type outside GPUI can implement it. A touch reaches
+        // this element only as the scroll and mouse events the platform
+        // synthesizes from it, which carry no way to tell a finger from a
+        // mouse. So the long press that selects a word on touch screens has no
+        // producer, and the mouse path below is what still drives selection.
 
         window.on_mouse_event({
             let state = self.state.clone();
@@ -1090,10 +1064,11 @@ impl<M: InputModeKind> TextElement<M> {
                 &[TextRun {
                     len: line_number_len,
                     font: style.font(),
-                    color: gpui::black(),
+                    color: gpui::black().into(),
                     background_color: None,
                     underline: None,
                     strikethrough: None,
+                    letter_spacing: None,
                 }],
                 None,
             );
@@ -1142,10 +1117,11 @@ impl<M: InputModeKind> TextElement<M> {
             &[TextRun {
                 len: space_text.len(),
                 font: style.font(),
-                color: invisible_color,
+                color: invisible_color.into(),
                 background_color: None,
                 underline: None,
                 strikethrough: None,
+                letter_spacing: None,
             }],
             None,
         );
@@ -1157,10 +1133,11 @@ impl<M: InputModeKind> TextElement<M> {
             &[TextRun {
                 len: tab_text.len(),
                 font: style.font(),
-                color: invisible_color,
+                color: invisible_color.into(),
                 background_color: None,
                 underline: None,
                 strikethrough: None,
+                letter_spacing: None,
             }],
             None,
         );
@@ -1214,10 +1191,11 @@ impl<M: InputModeKind> TextElement<M> {
             let first_run = TextRun {
                 len: first_text.len(),
                 font: font.clone(),
-                color: completion_color,
+                color: completion_color.into(),
                 background_color: None,
                 underline: None,
                 strikethrough: None,
+                letter_spacing: None,
             };
             Some(
                 window
@@ -1237,10 +1215,11 @@ impl<M: InputModeKind> TextElement<M> {
                 let run = TextRun {
                     len,
                     font: font.clone(),
-                    color: completion_color,
+                    color: completion_color.into(),
                     background_color: None,
                     underline: None,
                     strikethrough: None,
+                    letter_spacing: None,
                 };
                 // Use space for empty lines so they take up height
                 let shaped_text = if text.is_empty() { " ".into() } else { text };
@@ -1354,7 +1333,7 @@ impl<M: InputModeKind> TextElement<M> {
                     gpui::canvas(
                         |_, _, _| {},
                         move |bounds, _, window, cx| {
-                            let color = window.text_style().color;
+                            let color = window.text_style().color.to_hsla();
                             let _ = window.paint_svg(
                                 bounds,
                                 path.into(),
@@ -1467,9 +1446,9 @@ impl<M: InputModeKind> TextElement<M> {
             // A token is an object, not text: the arrow, never the I-beam.
             .cursor_default()
             .when(accessible, |this| {
-                this.role(gpui::Role::Button)
+                this.role(Role::Button)
                     .aria_label(token.token().label().clone())
-                    .on_a11y_action(gpui::AccessibleAction::Click, move |_, window, cx| {
+                    .on_a11y_action(AccessibleAction::Click, move |_, window, cx| {
                         let state = accessible_state.read(cx);
                         let activation = state
                             .token_spans()
@@ -2202,8 +2181,6 @@ pub(super) struct PrepaintState {
     range_decoration_frames: Vec<(Path<Pixels>, Hsla)>,
     hover_definition_hitbox: Option<Hitbox>,
     indent_guides_path: Option<Path<Pixels>>,
-    /// The whole input, for deciding whether a long press started in it.
-    hitbox: Hitbox,
     bounds: Bounds<Pixels>,
     /// Fold icon layout data
     fold_icon_layout: FoldIconLayout,
@@ -2249,25 +2226,25 @@ fn print_points_as_svg_path(
     for corners in line_corners {
         println!(
             "tl: ({}, {}), tr: ({}, {}), bl: ({}, {}), br: ({}, {})",
-            corners.top_left.as_f32() as i32,
-            corners.top_left.as_f32() as i32,
-            corners.top_right.as_f32() as i32,
-            corners.top_right.as_f32() as i32,
-            corners.bottom_left.as_f32() as i32,
-            corners.bottom_left.as_f32() as i32,
-            corners.bottom_right.as_f32() as i32,
-            corners.bottom_right.as_f32() as i32,
+            corners.top_left.to_f32() as i32,
+            corners.top_left.to_f32() as i32,
+            corners.top_right.to_f32() as i32,
+            corners.top_right.to_f32() as i32,
+            corners.bottom_left.to_f32() as i32,
+            corners.bottom_left.to_f32() as i32,
+            corners.bottom_right.to_f32() as i32,
+            corners.bottom_right.to_f32() as i32,
         );
     }
 
     if points.len() > 0 {
         println!(
             "M{},{}",
-            points[0].x.as_f32() as i32,
-            points[0].y.as_f32() as i32
+            points[0].x.to_f32() as i32,
+            points[0].y.to_f32() as i32
         );
         for p in points.iter().skip(1) {
-            println!("L{},{}", p.x.as_f32() as i32, p.y.as_f32() as i32);
+            println!("L{},{}", p.x.to_f32() as i32, p.y.to_f32() as i32);
         }
     }
 }
@@ -2335,14 +2312,14 @@ fn snap_frame_outline(
     stroke_width: Pixels,
     scale_factor: f32,
 ) -> (Pixels, Vec<Point<Pixels>>) {
-    let physical_width = ((stroke_width.as_f32() * scale_factor).abs() - 0.5)
+    let physical_width = ((stroke_width.to_f32() * scale_factor).abs() - 0.5)
         .ceil()
         .max(1.);
     let stroke_width = px(physical_width / scale_factor);
     let center_offset = if physical_width % 2. == 0. { 0. } else { 0.5 };
     let snap = |value: Pixels| {
         px(
-            ((value.as_f32() * scale_factor - center_offset).round() + center_offset)
+            ((value.to_f32() * scale_factor - center_offset).round() + center_offset)
                 / scale_factor,
         )
     };
@@ -2427,7 +2404,13 @@ impl<M: InputModeKind> Element for TextElement<M> {
         // out there is measured in spaces instead.
         let space_width = {
             let font_id = window.text_system().resolve_font(&font);
-            window.text_system().layout_width(font_id, text_size, ' ')
+            // A font without a space glyph has no advance to report; the width
+            // of nothing is the honest measure for a pointer standing in for
+            // one.
+            window
+                .text_system()
+                .advance(font_id, text_size, ' ')
+                .map_or_else(|_| Pixels::ZERO, |advance| advance.width)
         };
 
         self.state.update(cx, |state, cx| {
@@ -2444,7 +2427,7 @@ impl<M: InputModeKind> Element for TextElement<M> {
         let text_style = window.text_style();
         let disabled = state.disabled;
         let dim = |color: Hsla| if disabled { color.opacity(0.5) } else { color };
-        let fg = dim(text_style.color);
+        let fg = dim(text_style.color.to_hsla());
         let (display_text, text_color) = if is_empty {
             (
                 &Rope::from(placeholder.as_str()),
@@ -2558,15 +2541,16 @@ impl<M: InputModeKind> Element for TextElement<M> {
         let run = TextRun {
             len: display_text.len(),
             font: style.font(),
-            color: text_color,
+            color: text_color.into(),
             background_color: None,
             underline: None,
             strikethrough: None,
+            letter_spacing: None,
         };
         let marked_run = TextRun {
             len: 0,
             font: style.font(),
-            color: text_color,
+            color: text_color.into(),
             background_color: None,
             underline: Some(UnderlineStyle {
                 thickness: px(1.),
@@ -2574,6 +2558,7 @@ impl<M: InputModeKind> Element for TextElement<M> {
                 wavy: false,
             }),
             strikethrough: None,
+            letter_spacing: None,
         };
 
         let ime_marked_range = ime_marked_display_range(
@@ -2588,7 +2573,7 @@ impl<M: InputModeKind> Element for TextElement<M> {
             for (range, style) in &highlight_styles {
                 let mut run = text_style.clone().highlight(*style).to_run(range.len());
                 if disabled {
-                    run.color = run.color.opacity(0.5);
+                    run.color = run.color.with_opacity(0.5);
                 }
 
                 runs.extend(split_run_for_ime_underline(
@@ -2658,10 +2643,11 @@ impl<M: InputModeKind> Element for TextElement<M> {
                             &[TextRun {
                                 len: longest_line.len(),
                                 font: key.font.clone(),
-                                color: gpui::black(),
+                                color: gpui::black().into(),
                                 background_color: None,
                                 underline: None,
                                 strikethrough: None,
+                                letter_spacing: None,
                             }],
                             wrap_width,
                         )
@@ -2786,18 +2772,20 @@ impl<M: InputModeKind> Element for TextElement<M> {
             let other_line_runs = vec![TextRun {
                 len: line_number_len,
                 font: style.font(),
-                color: state.editor_style.muted_foreground,
+                color: state.editor_style.muted_foreground.into(),
                 background_color: None,
                 underline: None,
                 strikethrough: None,
+                letter_spacing: None,
             }];
             let current_line_runs = vec![TextRun {
                 len: line_number_len,
                 font: style.font(),
-                color: state.editor_style.foreground,
+                color: state.editor_style.foreground.into(),
                 background_color: None,
                 underline: None,
                 strikethrough: None,
+                letter_spacing: None,
             }];
 
             // build line numbers
@@ -2849,12 +2837,15 @@ impl<M: InputModeKind> Element for TextElement<M> {
             )));
         let fold_icon_layout =
             self.layout_fold_icons(original_x, &bounds, &last_layout, window, cx);
-        let hitbox = window.insert_hitbox(input_bounds, HitboxBehavior::Normal);
+        // The input's mouse listeners are registered at the window level and read
+        // no hitbox of their own — the long press that consulted this one had no
+        // producer to reach it. The hitbox is still inserted, so the framework
+        // keeps hit-testing the input's bounds as it did.
+        window.insert_hitbox(input_bounds, HitboxBehavior::Normal);
 
         let token_elements = self.prepaint_tokens(&last_layout, bounds, token_elements, window, cx);
         PrepaintState {
             token_elements,
-            hitbox,
             bounds,
             last_layout,
             scroll_size,
@@ -3090,7 +3081,8 @@ impl<M: InputModeKind> Element for TextElement<M> {
                     window.paint_quad(fill(ghost_bounds, editor_background));
 
                     // Paint ghost line text
-                    _ = ghost_line.paint(
+                    _ = paint_shaped_line(
+                        ghost_line,
                         ghost_p,
                         line_height,
                         text_align,
@@ -3157,7 +3149,7 @@ impl<M: InputModeKind> Element for TextElement<M> {
                 }
 
                 for line in lines {
-                    _ = line.paint(p, line_height, TextAlign::Left, None, window, cx);
+                    _ = paint_shaped_line(line, p, line_height, TextAlign::Left, None, window, cx);
                     offset_y += line_height;
                 }
 
@@ -3223,12 +3215,12 @@ impl<M: InputModeKind> Element for TextElement<M> {
                     window.paint_quad(fill(bg_bounds, editor_background));
 
                     // Paint first line completion text
-                    _ = first_line.paint(p, line_height, text_align, None, window, cx);
+                    _ = paint_shaped_line(first_line, p, line_height, text_align, None, window, cx);
                 }
             }
         }
 
-        self.paint_mouse_listeners(&prepaint.hitbox, window, cx);
+        self.paint_mouse_listeners(window, cx);
     }
 }
 
@@ -3443,7 +3435,7 @@ fn split_runs_by_bg_segments(
             if run_len > 0 {
                 result.push(TextRun {
                     len: run_len,
-                    color: text_color,
+                    color: text_color.into(),
                     ..run.clone()
                 });
 
@@ -4071,10 +4063,11 @@ mod tests {
         let run = TextRun {
             len: 0,
             font: gpui::font(".SystemUIFont"),
-            color: gpui::black(),
+            color: gpui::black().into(),
             background_color: None,
             underline: None,
             strikethrough: None,
+            letter_spacing: None,
         };
 
         // use hello this-is-test
@@ -4220,10 +4213,11 @@ mod tests {
         let run = TextRun {
             len: 0,
             font: gpui::font(".SystemUIFont"),
-            color: gpui::black(),
+            color: gpui::black().into(),
             background_color: None,
             underline: None,
             strikethrough: None,
+            letter_spacing: None,
         };
 
         let runs = vec![
@@ -4258,10 +4252,11 @@ mod tests {
         let run = TextRun {
             len: 0,
             font: gpui::font(".SystemUIFont"),
-            color: gpui::blue(),
+            color: gpui::blue().into(),
             background_color: None,
             underline: None,
             strikethrough: None,
+            letter_spacing: None,
         };
         let runs = |lens: &[usize]| {
             lens.iter()
@@ -4337,10 +4332,11 @@ mod tests {
         let run = TextRun {
             len: 0,
             font: gpui::font(".SystemUIFont"),
-            color: gpui::blue(),
+            color: gpui::blue().into(),
             background_color: None,
             underline: None,
             strikethrough: None,
+            letter_spacing: None,
         };
 
         let runs = vec![

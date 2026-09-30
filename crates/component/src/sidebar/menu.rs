@@ -9,10 +9,12 @@ use crate::{
 };
 use gpui::{
     AnyElement, App, ClickEvent, ElementId, InteractiveElement as _, IntoElement,
-    ParentElement as _, Role, SharedString, StatefulInteractiveElement as _, StyleRefinement,
-    Styled, Window, div, percentage, prelude::FluentBuilder,
+    ParentElement as _, SharedString, StatefulInteractiveElement as _, StyleRefinement, Styled,
+    Window, div, percentage, prelude::FluentBuilder,
 };
 use gpui_base::TestSupportExt as _;
+use gpui_base::compat::A11yElementExt;
+use gpui_base::compat::Role;
 use std::rc::Rc;
 
 /// Menu for the [`super::Sidebar`]

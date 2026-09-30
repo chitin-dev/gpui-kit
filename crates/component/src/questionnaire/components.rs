@@ -1,8 +1,10 @@
+use gpui_base::compat::A11yElementExt;
+use gpui_base::compat::Role;
 use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ElementId, Entity, InteractiveElement, IntoElement, ParentElement, RenderOnce,
-    Role, SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window, div,
+    SharedString, StatefulInteractiveElement, StyleRefinement, Styled, Window, div,
     prelude::FluentBuilder as _, svg,
 };
 use gpui_base::RadioGroup;
@@ -1413,6 +1415,7 @@ mod tests {
         AppContext as _, Context, Element as _, Focusable as _, KeyDownEvent, Keystroke, Render,
         TestAppContext, VisualTestContext, accesskit, px,
     };
+    use gpui_base::compat::Role;
 
     use gpui_base::questionnaire::{
         QuestionnaireChoiceDefinition, QuestionnaireInputDefinition, QuestionnaireItemDefinition,
@@ -1488,7 +1491,7 @@ mod tests {
                 override_skip_margin: false,
             }
         });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         let state = cx.update(|_, cx| view.read(cx).state.clone());
         cx.update(|window, cx| {
             let focus_handle = state.read(cx).focus_handle().clone();
@@ -1526,7 +1529,7 @@ mod tests {
                 override_skip_margin: false,
             }
         });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         let state = cx.update(|_, cx| view.read(cx).state.clone());
         (cx, state)
     }
@@ -1555,7 +1558,7 @@ mod tests {
                 override_skip_margin,
             }
         });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         let state = cx.update(|_, cx| view.read(cx).state.clone());
         (cx, state)
     }
@@ -1637,7 +1640,7 @@ mod tests {
             state
                 .update(cx, |state, cx| state.set_current_item("first", window, cx))
                 .unwrap();
-            window.draw(cx).clear(cx);
+            window.draw(cx).clear();
         });
         let first_actions = cx.debug_bounds(actions_id).expect("first actions rendered");
         let first_next = cx.debug_bounds(next_id).expect("first next rendered");
@@ -1648,7 +1651,7 @@ mod tests {
             state
                 .update(cx, |state, cx| state.set_current_item("third", window, cx))
                 .unwrap();
-            window.draw(cx).clear(cx);
+            window.draw(cx).clear();
         });
         let last_actions = cx.debug_bounds(actions_id).expect("last actions rendered");
         let last_previous = cx
@@ -1736,7 +1739,7 @@ mod tests {
                 part_size,
             }
         });
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         cx.debug_bounds("scale-choice").expect("choice rendered")
     }
 
@@ -1831,7 +1834,7 @@ mod tests {
         });
 
         simulate_key(cx, "right", false, false);
-        cx.update(|window, cx| window.draw(cx).clear(cx));
+        cx.update(|window, cx| window.draw(cx).clear());
         cx.update(|_, cx| {
             assert_eq!(
                 state.read(cx).answer("first").unwrap().choices(),

@@ -1,3 +1,4 @@
+use crate::compat::{Anchor, ReduceMotionExt as _};
 use std::{cell::Cell, ops::Deref, panic::Location, rc::Rc};
 
 use instant::{Duration, Instant};
@@ -8,12 +9,11 @@ use crate::{
     theme::ActiveTheme as _,
 };
 use gpui::{
-    Anchor, App, Axis, Background, BorderStyle, Bounds, ContentMask, CursorStyle, Edges, Element,
+    App, Axis, Background, BorderStyle, Bounds, ContentMask, CursorStyle, Edges, Element,
     ElementId, EntityId, GlobalElementId, Hitbox, HitboxBehavior, Hsla, InspectorElementId,
     IntoElement, IsZero, LayoutId, ListState, MouseDownEvent, MouseMoveEvent, MouseUpEvent,
     PaintQuad, Pixels, Point, Position, ScrollHandle, ScrollWheelEvent, Size, Style,
-    TouchDragEvent, TouchPhase, UniformListScrollHandle, Window, fill, point,
-    prelude::FluentBuilder, px, relative, size,
+    UniformListScrollHandle, Window, fill, point, prelude::FluentBuilder, px, relative, size,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -1503,14 +1503,12 @@ impl Element for Scrollbar {
             // The clickable area of the thumb
             let thumb_length = geometry.length;
             let thumb_bounds = if is_vertical {
-                Bounds::from_anchor_and_size(
-                    Anchor::TopRight,
+                Anchor::TopRight.bounds_at(
                     bounds.top_right() + point(-inset, thumb_start),
                     size(track_width, thumb_length),
                 )
             } else {
-                Bounds::from_anchor_and_size(
-                    Anchor::BottomLeft,
+                Anchor::BottomLeft.bounds_at(
                     bounds.bottom_left() + point(thumb_start, -inset),
                     size(thumb_length, track_width),
                 )
@@ -1518,14 +1516,12 @@ impl Element for Scrollbar {
 
             // The actual render area of the thumb
             let thumb_fill_bounds = if is_vertical {
-                Bounds::from_anchor_and_size(
-                    Anchor::TopRight,
+                Anchor::TopRight.bounds_at(
                     bounds.top_right() + point(-inset, thumb_start),
                     size(thumb_width, thumb_length),
                 )
             } else {
-                Bounds::from_anchor_and_size(
-                    Anchor::BottomLeft,
+                Anchor::BottomLeft.bounds_at(
                     bounds.bottom_left() + point(thumb_start, -inset),
                     size(thumb_length, thumb_width),
                 )
@@ -1655,58 +1651,14 @@ impl Element for Scrollbar {
                         }
                     });
 
-                    // A thumb follows the finger, unlike content panning. Claim
-                    // this touch before the window turns it into wheel deltas.
-                    window.on_mouse_event({
-                        let state = scrollbar_state.clone();
-                        let scroll_handle = self.scroll_handle.clone();
-                        let max_fps_duration = Duration::from_secs_f64(1. / self.max_fps as f64);
-                        move |event: &TouchDragEvent, phase, window, cx| {
-                            if !phase.bubble() {
-                                return;
-                            }
-                            if event.phase == TouchPhase::Started {
-                                if !is_visible
-                                    || window.default_prevented()
-                                    || !thumb_bounds.contains(&event.start_position)
-                                {
-                                    return;
-                                }
-                                scroll_handle.start_drag();
-                                state.set(state.get().with_drag_pos(
-                                    axis,
-                                    event.start_position - thumb_bounds.origin,
-                                ));
-                            } else if state.get().dragged_axis != Some(axis) {
-                                return;
-                            }
-                            if event.phase != TouchPhase::Cancelled {
-                                scroll_handle.set_offset(active_geometry.drag_offset(
-                                    axis,
-                                    event.position,
-                                    state.get().drag_pos,
-                                    scroll_handle.offset(),
-                                ));
-                            }
-                            if matches!(event.phase, TouchPhase::Ended | TouchPhase::Cancelled) {
-                                scroll_handle.end_drag();
-                                state.set(state.get().with_unset_drag_pos(Instant::now()));
-                            }
-                            window.prevent_default();
-                            cx.stop_propagation();
-                            if event.phase == TouchPhase::Moved {
-                                state.notify_drag(
-                                    Instant::now(),
-                                    max_fps_duration,
-                                    view_id,
-                                    window,
-                                    cx,
-                                );
-                            } else {
-                                cx.notify(view_id);
-                            }
-                        }
-                    });
+                    // A thumb followed the finger through GPUI's `TouchDragEvent`.
+                    // WGPUI dispatches no such event and seals `gpui::MouseEvent`,
+                    // so no listener for a drag gesture can be written from
+                    // outside GPUI: a finger reaches an application only as the
+                    // `TouchPhase` on a `ScrollWheelEvent`, which says where a
+                    // scroll is in its gesture but not where the finger went.
+                    // Dragging the thumb is therefore the mouse handlers' job
+                    // alone.
 
                     if is_visible {
                         window.on_mouse_event({
@@ -2619,7 +2571,7 @@ mod tests {
     }
 
     #[gpui::test]
-    fn repeated_touch_and_mouse_drags_keep_the_painted_grab_point(cx: &mut TestAppContext) {
+    fn repeated_mouse_drags_keep_the_painted_grab_point(cx: &mut TestAppContext) {
         struct Probe {
             scrollbar: Scrollbar,
             painted: Rc<Cell<Bounds<Pixels>>>,
@@ -2699,160 +2651,96 @@ mod tests {
                 })
             }
         }
-        for touch in [true, false] {
-            for vertical in [true, false] {
-                for (origin, viewport_size, content_size) in [
-                    (Point::default(), 200., 1000.),
-                    (point(px(30.), px(40.)), 240., 500.),
-                ] {
-                    let handle = TestHandle::new(size(px(content_size), px(content_size)));
-                    handle.set_offset(point(px(-100.), px(-100.)));
-                    let painted = Rc::new(Cell::new(Bounds::default()));
-                    let (_, cx) = cx.add_window_view({
-                        let handle = handle.clone();
-                        let painted = painted.clone();
-                        move |_, _| Root {
-                            handle,
-                            painted,
-                            axis: if vertical {
-                                ScrollbarAxis::Vertical
-                            } else {
-                                ScrollbarAxis::Both
-                            },
-                            viewport: Bounds::new(
-                                origin,
-                                size(px(viewport_size), px(viewport_size)),
-                            ),
-                        }
-                    });
-                    cx.update(|window, cx| window.draw(cx).clear(cx));
-                    let initial = painted.get();
-                    let start = initial.center();
-                    let grab = if vertical {
-                        start.y - initial.origin.y
+        for vertical in [true, false] {
+            for (origin, viewport_size, content_size) in [
+                (Point::default(), 200., 1000.),
+                (point(px(30.), px(40.)), 240., 500.),
+            ] {
+                let handle = TestHandle::new(size(px(content_size), px(content_size)));
+                handle.set_offset(point(px(-100.), px(-100.)));
+                let painted = Rc::new(Cell::new(Bounds::default()));
+                let (_, cx) = cx.add_window_view({
+                    let handle = handle.clone();
+                    let painted = painted.clone();
+                    move |_, _| Root {
+                        handle,
+                        painted,
+                        axis: if vertical {
+                            ScrollbarAxis::Vertical
+                        } else {
+                            ScrollbarAxis::Both
+                        },
+                        viewport: Bounds::new(origin, size(px(viewport_size), px(viewport_size))),
+                    }
+                });
+                cx.update(|window, cx| window.draw(cx).clear(cx));
+                let initial = painted.get();
+                let start = initial.center();
+                let grab = if vertical {
+                    start.y - initial.origin.y
+                } else {
+                    start.x - initial.origin.x
+                };
+                let axis_delta = |value| {
+                    if vertical {
+                        point(px(0.), px(value))
                     } else {
-                        start.x - initial.origin.x
+                        point(px(value), px(0.))
+                    }
+                };
+                let axis_value = |point: Point<Pixels>| if vertical { point.y } else { point.x };
+                let started_position = start;
+                cx.simulate_mouse_down(start, MouseButton::Left, Modifiers::default());
+                cx.update(|window, cx| window.draw(cx).clear(cx));
+                assert!(
+                    (axis_value(painted.get().origin) + grab - axis_value(started_position)).abs()
+                        < px(0.1),
+                    "starting must preserve the grab point and first displacement"
+                );
+                let mut reference_offset = px(0.);
+                let mut offset_per_pixel = 0.;
+                for delta in [0., 24., -8., 32., -10., 8., 0.] {
+                    let position = start + axis_delta(delta);
+                    cx.simulate_mouse_move(position, Some(MouseButton::Left), Modifiers::default());
+                    cx.update(|window, cx| window.draw(cx).clear(cx));
+                    if delta == 0. {
+                        reference_offset = axis_value(handle.offset());
+                    }
+                    if delta == 24. {
+                        offset_per_pixel =
+                            (axis_value(handle.offset()) - reference_offset) / px(24.);
+                    }
+                    let actual = if vertical {
+                        painted.get().origin.y + grab
+                    } else {
+                        painted.get().origin.x + grab
                     };
-                    let axis_delta = |value| {
-                        if vertical {
-                            point(px(0.), px(value))
-                        } else {
-                            point(px(value), px(0.))
-                        }
-                    };
-                    let axis_value =
-                        |point: Point<Pixels>| if vertical { point.y } else { point.x };
-                    let started_position = if touch { start + axis_delta(5.) } else { start };
-                    if touch {
-                        cx.simulate_event(TouchDragEvent {
-                            phase: TouchPhase::Started,
-                            start_position: start,
-                            position: started_position,
-                        });
-                    } else {
-                        cx.simulate_mouse_down(start, MouseButton::Left, Modifiers::default());
-                    }
-                    cx.update(|window, cx| window.draw(cx).clear(cx));
+                    let expected = if vertical { position.y } else { position.x };
                     assert!(
-                        (axis_value(painted.get().origin) + grab - axis_value(started_position))
-                            .abs()
-                            < px(0.1),
-                        "starting must preserve the grab point and first displacement"
-                    );
-                    let mut reference_offset = px(0.);
-                    let mut offset_per_pixel = 0.;
-                    for delta in [0., 24., -8., 32., -10., 8., 0.] {
-                        let position = start + axis_delta(delta);
-                        if touch {
-                            cx.simulate_event(TouchDragEvent {
-                                phase: TouchPhase::Moved,
-                                start_position: start,
-                                position,
-                            });
-                        } else {
-                            cx.simulate_mouse_move(
-                                position,
-                                Some(MouseButton::Left),
-                                Modifiers::default(),
-                            );
-                        }
-                        cx.update(|window, cx| window.draw(cx).clear(cx));
-                        if delta == 0. {
-                            reference_offset = axis_value(handle.offset());
-                        }
-                        if delta == 24. {
-                            offset_per_pixel =
-                                (axis_value(handle.offset()) - reference_offset) / px(24.);
-                        }
-                        let actual = if vertical {
-                            painted.get().origin.y + grab
-                        } else {
-                            painted.get().origin.x + grab
-                        };
-                        let expected = if vertical { position.y } else { position.x };
-                        assert!(
-                            (actual - expected).abs() < px(0.1),
-                            "touch={touch} vertical={vertical} delta={delta}: painted grab {actual:?}, pointer {expected:?}"
-                        );
-                    }
-                    // Release contains a final displacement without an intervening move.
-                    let expected_offset = reference_offset + px(12.) * offset_per_pixel;
-                    if touch {
-                        cx.simulate_event(TouchDragEvent {
-                            phase: TouchPhase::Ended,
-                            start_position: start,
-                            position: start + axis_delta(12.),
-                        });
-                    } else {
-                        cx.simulate_mouse_up(
-                            start + axis_delta(12.),
-                            MouseButton::Left,
-                            Modifiers::default(),
-                        );
-                    }
-                    assert!(
-                        (axis_value(handle.offset()) - expected_offset).abs() < px(0.1),
-                        "release must flush the last displacement"
-                    );
-                    let released_offset = handle.offset();
-                    cx.update(|window, cx| window.draw(cx).clear(cx));
-                    assert_eq!(
-                        handle.offset(),
-                        released_offset,
-                        "leaving active styling must not scroll"
+                        (actual - expected).abs() < px(0.1),
+                        "vertical={vertical} delta={delta}: painted grab {actual:?}, pointer {expected:?}"
                     );
                 }
+                // Release contains a final displacement without an intervening move.
+                let expected_offset = reference_offset + px(12.) * offset_per_pixel;
+                cx.simulate_mouse_up(
+                    start + axis_delta(12.),
+                    MouseButton::Left,
+                    Modifiers::default(),
+                );
+                assert!(
+                    (axis_value(handle.offset()) - expected_offset).abs() < px(0.1),
+                    "release must flush the last displacement"
+                );
+                let released_offset = handle.offset();
+                cx.update(|window, cx| window.draw(cx).clear(cx));
+                assert_eq!(
+                    handle.offset(),
+                    released_offset,
+                    "leaving active styling must not scroll"
+                );
             }
         }
-    }
-
-    #[gpui::test]
-    fn touch_thumb_drag_moves_down_and_cancel_releases_handle(cx: &mut TestAppContext) {
-        let (cx, handle) = harness(
-            cx,
-            ScrollbarAxis::Vertical,
-            ScrollbarMode::Always,
-            size(px(100.), px(500.)),
-        );
-        let start_position = point(px(95.), px(20.));
-        for (phase, position) in [
-            (TouchPhase::Started, start_position),
-            (TouchPhase::Moved, point(px(95.), px(45.))),
-            (TouchPhase::Cancelled, point(px(95.), px(45.))),
-        ] {
-            cx.simulate_event(TouchDragEvent {
-                phase,
-                start_position,
-                position,
-            });
-        }
-        assert!(
-            handle.offset().y < px(0.),
-            "thumb down must scroll toward later content"
-        );
-        assert_eq!(handle.offset().x, px(0.));
-        assert_eq!(handle.drag_starts.get(), 1);
-        assert_eq!(handle.drag_ends.get(), 1);
     }
 
     #[gpui::test]

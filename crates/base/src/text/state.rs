@@ -20,6 +20,7 @@ use gpui::{
 use crate::{
     AutoScroll, ElementExt, TextSelection,
     async_util::{Receiver, Sender, unbounded},
+    compat::ReduceMotionExt as _,
     input::{self, SelectAll},
     text::{
         CodeBlockActionsFn, CodeBlockHighlighterFn, LinkClickHandlerFn, MarkdownExtensions,
@@ -498,21 +499,69 @@ impl TextViewState {
     ///
     /// `Document::render_root` only calls `ListState::reset` when the block
     /// *count* changes, and the full-measure pass enabled by `measure_all` is
-    /// a one-shot latch that only `reset`, `remeasure_items`, or a width
-    /// change re-arms. Replacing a document with one that happens to have the
-    /// same number of blocks therefore leaves every cached height belonging to
-    /// the *previous* document. The list summary height stays wrong, and since
-    /// the wheel clamps against that summary, the blocks past the false bottom
-    /// can never scroll into view to be re-measured -- the clamp seals itself.
+    /// a one-shot latch that only `reset`, [`Self::remeasure_items`], or a
+    /// width change re-arms. Replacing a document with one that happens to have
+    /// the same number of blocks therefore leaves every cached height belonging
+    /// to the *previous* document. The list summary height stays wrong, and
+    /// since the wheel clamps against that summary, the blocks past the false
+    /// bottom can never scroll into view to be re-measured -- the clamp seals
+    /// itself.
     ///
-    /// `remeasure_items` re-arms the latch and marks the items unmeasured
-    /// while keeping their old sizes as hints, so the scrollbar does not
-    /// collapse in the frame before the next layout measures the real heights.
-    fn invalidate_measured_heights(&self) {
+    /// [`Self::remeasure_items`] marks the blocks unmeasured and re-arms the
+    /// latch, so the very next layout measures the real heights, before
+    /// anything is painted.
+    fn invalidate_measured_heights(&mut self) {
         let count = self.list_state.item_count();
         if count > 0 {
-            self.list_state.remeasure_items(0..count);
+            self.remeasure_items(0..count);
         }
+    }
+
+    /// Marks `range` of the block list for re-measurement, keeping the reader
+    /// where they are.
+    ///
+    /// gpui-pre's `ListState::remeasure_items` did this in one call: it turned
+    /// the items back into unmeasured ones while keeping their old heights as a
+    /// hint, and re-armed the full-measure latch. WGPUI splits that across two
+    /// calls and its unmeasured item carries no height, so the two are run here
+    /// in the order that keeps the scroll position meaningful:
+    ///
+    /// - `splice` is what turns items back into unmeasured ones, but it treats
+    ///   the range as *replaced* and rewinds a scroll offset that falls inside
+    ///   it — a reader partway down the document would be thrown back to the
+    ///   range's start on every update. The block the reader is on is therefore
+    ///   spliced on its own first, while the blocks above it still hold their
+    ///   heights; the offset restored at that moment describes the reader's
+    ///   position under the old heights, and the two halves either side of that
+    ///   block are spliced afterwards, which leave the offset alone. The reader
+    ///   keeps their pixel position and the content above them reflows, the same
+    ///   arrangement WGPUI gives a list whose width changed.
+    /// - `measure_all` re-arms the one-shot latch that has the next layout
+    ///   measure every item, on screen or not. Without it only the visible
+    ///   blocks would be re-measured, and the list's height would grow back as
+    ///   the reader scrolled through it.
+    fn remeasure_items(&mut self, range: Range<usize>) {
+        let count = self.list_state.item_count();
+        let start = range.start.min(count);
+        let end = range.end.min(count);
+        if start == end {
+            return;
+        }
+
+        let scroll_top = self.list_state.logical_scroll_top();
+        if (start..end).contains(&scroll_top.item_ix) {
+            let reader = scroll_top.item_ix;
+            self.list_state.splice(reader..reader + 1, 1);
+            self.list_state.scroll_to(scroll_top);
+            self.list_state.splice(start..reader, reader - start);
+            self.list_state.splice(reader + 1..end, end - reader - 1);
+        } else {
+            self.list_state.splice(start..end, end - start);
+        }
+
+        // `measure_all` consumes the state it is called on; a clone is the same
+        // list, so this re-arms the latch on the state the view holds.
+        self.list_state = self.list_state.clone().measure_all();
     }
 
     /// Remeasure inline resources after their prepared content or metrics change.
@@ -708,7 +757,7 @@ impl TextViewState {
     /// which scrolled a streaming view back to the top and measured every
     /// block again on each new block. Only a grown block count is handled
     /// here; anything else is left to that reset.
-    fn splice_appended_blocks(&self, new: &ParsedDocument) {
+    fn splice_appended_blocks(&mut self, new: &ParsedDocument) {
         let old = &self.parsed_content.document.blocks;
         let (old_count, new_count) = (old.len(), new.blocks.len());
         if old_count == 0 || new_count <= old_count || self.list_state.item_count() != old_count {
@@ -727,10 +776,9 @@ impl TextViewState {
                     .is_some_and(|span| new_block.span() == Some(span))
             })
             .count();
-        // Keeps the replaced blocks' heights as hints and the scroll offset
-        // inside them, and has the next layout measure only the blocks that
-        // are not measured.
-        self.list_state.remeasure_items(unchanged..old_count);
+        // Keeps the scroll offset inside the replaced blocks and has the next
+        // layout measure them again.
+        self.remeasure_items(unchanged..old_count);
         self.list_state
             .splice(old_count..old_count, new_count - old_count);
     }

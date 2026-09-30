@@ -1,3 +1,6 @@
+use gpui_base::compat::A11yElementExt;
+use gpui_base::compat::FlexExt as _;
+use gpui_base::compat::Role;
 use instant::Duration;
 use std::ops::Range;
 
@@ -14,7 +17,7 @@ use crate::{Icon, IndexPath, Selectable, Sizable, StyledExt};
 use crate::{VirtualListScrollHandle, list::ListDelegate, v_virtual_list};
 use gpui::{
     App, AvailableSpace, ClickEvent, Context, DefiniteLength, EdgesRefinement, EventEmitter,
-    ListSizingBehavior, RenderOnce, Role, ScrollStrategy, SharedString, StatefulInteractiveElement,
+    ListSizingBehavior, RenderOnce, ScrollStrategy, SharedString, StatefulInteractiveElement,
     StyleRefinement, Subscription, px, size,
 };
 use gpui::{
@@ -799,6 +802,7 @@ mod measurement_tests {
     use super::*;
     use crate::list::ListItem;
     use gpui::{Element, TestAppContext};
+    use gpui_base::compat::Role;
 
     struct Delegate {
         counts: Vec<usize>,

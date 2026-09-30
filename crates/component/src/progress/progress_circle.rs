@@ -84,12 +84,12 @@ impl ProgressCircle {
             move |bounds: Bounds<Pixels>, _window: &mut Window, _cx: &mut App| {
                 let stroke_width = (bounds.size.width * 0.15).min(px(5.));
                 let actual_size = bounds.size.width.min(bounds.size.height);
-                let actual_radius = (actual_size.as_f32() - stroke_width.as_f32()) / 2.;
+                let actual_radius = (actual_size.to_f32() - stroke_width.to_f32()) / 2.;
                 PrepaintState {
                     start_value,
                     end_value,
-                    actual_inner_radius: actual_radius - stroke_width.as_f32() / 2.,
-                    actual_outer_radius: actual_radius + stroke_width.as_f32() / 2.,
+                    actual_inner_radius: actual_radius - stroke_width.to_f32() / 2.,
+                    actual_outer_radius: actual_radius + stroke_width.to_f32() / 2.,
                     bounds,
                 }
             },
