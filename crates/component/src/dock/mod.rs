@@ -80,6 +80,8 @@ pub(crate) struct SkinShared {
     panel_style: Cell<PanelStyle>,
     toggle_button_visible: Cell<bool>,
     close_button_visible: Cell<bool>,
+    menu_button_visible: Cell<bool>,
+    toolbar_separator_visible: Cell<bool>,
     /// The dock whose resize handle is being dragged, if any. Only one can be.
     resizing_dock: Cell<Option<DockPlacement>>,
 }
@@ -156,6 +158,8 @@ impl DockSkin {
                 panel_style: Cell::new(PanelStyle::default()),
                 toggle_button_visible: Cell::new(true),
                 close_button_visible: Cell::new(false),
+                menu_button_visible: Cell::new(true),
+                toolbar_separator_visible: Cell::new(true),
                 resizing_dock: Cell::new(None),
             }),
         })
@@ -190,6 +194,28 @@ impl DockSkin {
     /// own close constraints still decide whether its button appears.
     pub fn set_close_button_visible(&self, visible: bool, cx: &mut App) {
         self.shared.close_button_visible.set(visible);
+        self.shared.notify(cx);
+    }
+
+    /// Whether tab bars offer the built-in panel menu.
+    pub fn is_menu_button_visible(&self) -> bool {
+        self.shared.menu_button_visible.get()
+    }
+
+    /// Shows the built-in panel menu; defaults to visible.
+    pub fn set_menu_button_visible(&self, visible: bool, cx: &mut App) {
+        self.shared.menu_button_visible.set(visible);
+        self.shared.notify(cx);
+    }
+
+    /// Whether a left border separates the trailing toolbar from tabs.
+    pub fn is_toolbar_separator_visible(&self) -> bool {
+        self.shared.toolbar_separator_visible.get()
+    }
+
+    /// Shows the trailing toolbar's left border; defaults to visible.
+    pub fn set_toolbar_separator_visible(&self, visible: bool, cx: &mut App) {
+        self.shared.toolbar_separator_visible.set(visible);
         self.shared.notify(cx);
     }
 }

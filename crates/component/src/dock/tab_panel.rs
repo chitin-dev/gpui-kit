@@ -327,32 +327,34 @@ impl TabGroupSkin {
                     )
                 },
             )
-            .child(
-                Button::new("menu")
-                    .icon(IconName::Ellipsis)
-                    .xsmall()
-                    .ghost()
-                    .tab_stop(false)
-                    .dropdown_menu(move |menu, window, cx| {
-                        menu.when_some(panel.clone(), |menu, panel| {
-                            panel.dropdown_menu(menu, window, cx)
+            .when(self.shared.menu_button_visible.get(), |this| {
+                this.child(
+                    Button::new("menu")
+                        .icon(IconName::Ellipsis)
+                        .xsmall()
+                        .ghost()
+                        .tab_stop(false)
+                        .dropdown_menu(move |menu, window, cx| {
+                            menu.when_some(panel.clone(), |menu, panel| {
+                                panel.dropdown_menu(menu, window, cx)
+                            })
+                            .separator()
+                            .menu_with_disabled(
+                                match zoomed {
+                                    true => t!("Dock.Zoom Out"),
+                                    false => t!("Dock.Zoom In"),
+                                },
+                                Box::new(ToggleZoom),
+                                !menu_zoom,
+                            )
+                            .when(closable, |menu| {
+                                menu.separator()
+                                    .menu(t!("Dock.Close"), Box::new(ClosePanel))
+                            })
                         })
-                        .separator()
-                        .menu_with_disabled(
-                            match zoomed {
-                                true => t!("Dock.Zoom Out"),
-                                false => t!("Dock.Zoom In"),
-                            },
-                            Box::new(ToggleZoom),
-                            !menu_zoom,
-                        )
-                        .when(closable, |menu| {
-                            menu.separator()
-                                .menu(t!("Dock.Close"), Box::new(ClosePanel))
-                        })
-                    })
-                    .anchor(Anchor::TopRight),
-            )
+                        .anchor(Anchor::TopRight),
+                )
+            })
     }
 
     /// The one-panel title bar: no tabs, just the title and the controls.
@@ -660,7 +662,9 @@ impl TabGroupSkin {
                         .items_center()
                         .top_0()
                         .right_0()
-                        .border_l_1()
+                        .when(self.shared.toolbar_separator_visible.get(), |this| {
+                            this.border_l_1()
+                        })
                         .border_b_1()
                         .h_full()
                         .border_color(cx.theme().border)
