@@ -1,5 +1,5 @@
 use crate::{
-    ActiveTheme, ElementExt, Placement,
+    ActiveTheme, ElementExt, Placement, WindowBorderOptions,
     dialog::{ANIMATION_DURATION, Dialog},
     input::AnyInputState,
     native_menu::FallbackMenuOverlay,
@@ -452,9 +452,15 @@ impl gpui_base::RootPlugin for WindowState {
         surface: gpui::AnyElement,
         _root: &gpui_base::Root,
         _window: &mut Window,
-        _cx: &mut App,
+        cx: &mut App,
     ) -> impl IntoElement {
-        window_border().child(surface)
+        let options = cx
+            .try_global::<WindowBorderOptions>()
+            .copied()
+            .unwrap_or_default();
+        window_border()
+            .shadow_size(options.shadow_size())
+            .child(surface)
     }
 }
 

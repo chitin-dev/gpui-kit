@@ -1,9 +1,9 @@
 // From:
 // https://github.com/zed-industries/zed/blob/56daba28d40301ee4c05546fadb691d070b7b2b6/crates/gpui/examples/window_shadow.rs
 use gpui::{
-    AnyElement, App, CursorStyle, Decorations, Edges, Hsla, InteractiveElement as _, IntoElement,
-    MouseButton, ParentElement, Pixels, Point, RenderOnce, ResizeEdge, Size, Styled as _, Tiling,
-    Window, div, point, prelude::FluentBuilder as _, px,
+    AnyElement, App, CursorStyle, Decorations, Edges, Global, Hsla, InteractiveElement as _,
+    IntoElement, MouseButton, ParentElement, Pixels, Point, RenderOnce, ResizeEdge, Size,
+    Styled as _, Tiling, Window, div, point, prelude::FluentBuilder as _, px,
 };
 
 use crate::ActiveTheme;
@@ -20,6 +20,39 @@ const RESIZE_HIT_SIZE: Pixels = px(4.0);
 /// radius here would round the frame itself but leave child backgrounds visible in the
 /// corners, so keep the generic window wrapper square until rounded content masks exist.
 pub(crate) const BORDER_RADIUS: Pixels = px(0.0);
+
+/// Application-wide defaults for the client-side frame installed by Kit's Root.
+///
+/// Set this global before opening windows. Absent a global, Kit preserves its
+/// platform defaults. A zero shadow size removes exterior padding, not window
+/// controls, the visible border, or the interior resize hit band.
+#[derive(Clone, Copy, Debug)]
+pub struct WindowBorderOptions {
+    shadow_size: Pixels,
+}
+
+impl Global for WindowBorderOptions {}
+
+impl Default for WindowBorderOptions {
+    fn default() -> Self {
+        Self {
+            shadow_size: SHADOW_SIZE,
+        }
+    }
+}
+
+impl WindowBorderOptions {
+    /// Sets the exterior shadow allowance in logical pixels; use zero for no padding.
+    pub fn with_shadow_size(mut self, size: impl Into<Pixels>) -> Self {
+        self.shadow_size = size.into();
+        self
+    }
+
+    /// Returns the exterior shadow allowance in logical pixels.
+    pub fn shadow_size(&self) -> Pixels {
+        self.shadow_size
+    }
+}
 
 /// Create a new window border.
 pub fn window_border() -> WindowBorder {
@@ -222,7 +255,7 @@ impl RenderOnce for WindowBorder {
                     .when(!tiling.bottom, |div| div.border_b(BORDER_SIZE))
                     .when(!tiling.left, |div| div.border_l(BORDER_SIZE))
                     .when(!tiling.right, |div| div.border_r(BORDER_SIZE))
-                    .when(!tiling.is_tiled(), |div| {
+                    .when(!tiling.is_tiled() && visual_shadow > px(0.0), |div| {
                         let opacity = if is_window_active { 1.0 } else { 0.7 };
                         div.shadow(vec![
                             // Keep the effective outer reach below SHADOW_SIZE. GPUI
