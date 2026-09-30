@@ -378,7 +378,7 @@ impl RenderOnce for TitleBar {
                         .flex_1()
                         .when(!is_web, |this| {
                             this.window_control_area(WindowControlArea::Drag)
-                                .when(window.is_fullscreen(), |this| this.pl_3())
+                                .when(!is_linux && window.is_fullscreen(), |this| this.pl_3())
                                 .when(is_linux && is_client_decorated, |this| {
                                     this.child(
                                         div()
