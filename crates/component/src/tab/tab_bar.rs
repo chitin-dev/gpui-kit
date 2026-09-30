@@ -440,6 +440,9 @@ impl RenderOnce for TabBar {
         let max_width = self.max_width;
 
         for (ix, child) in self.children.into_iter().enumerate() {
+            let child = child.when_some(self.style.border_color, |this, color| {
+                this.border_color(color)
+            });
             item_metas.push((child.label.clone(), child.icon.clone(), child.disabled));
             let tab_bar_prefix = child.tab_bar_prefix.unwrap_or(true);
             let mut tab = child
@@ -510,7 +513,7 @@ impl RenderOnce for TabBar {
                             .bottom_0()
                             .size_full()
                             .border_b_1()
-                            .border_color(cx.theme().border),
+                            .border_color(self.style.border_color.unwrap_or(cx.theme().border)),
                     )
                 },
             )

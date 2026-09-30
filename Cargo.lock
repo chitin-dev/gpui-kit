@@ -152,7 +152,7 @@ dependencies = [
  "objc2-foundation 0.3.2",
  "parking_lot",
  "percent-encoding",
- "windows-sys 0.52.0",
+ "windows-sys 0.60.2",
  "x11rb",
 ]
 
@@ -2016,7 +2016,7 @@ dependencies = [
  "log",
  "presser",
  "thiserror 2.0.20",
- "windows 0.62.2",
+ "windows 0.58.0",
 ]
 
 [[package]]
@@ -2062,7 +2062,7 @@ dependencies = [
 [[package]]
 name = "gpui-ce"
 version = "1.0.0"
-source = "git+https://github.com/chitin-dev/gpui-wgpu?rev=f8c52200f5a4fdec79c6ff7733cd6e1f57f87ae1#f8c52200f5a4fdec79c6ff7733cd6e1f57f87ae1"
+source = "git+https://github.com/chitin-dev/gpui-wgpu?rev=d71ebc98a575cf4a69e50c30298759374441c959#d71ebc98a575cf4a69e50c30298759374441c959"
 dependencies = [
  "anyhow",
  "arboard",
@@ -2778,7 +2778,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.62.2",
+ "windows-core 0.58.0",
 ]
 
 [[package]]
@@ -5801,7 +5801,7 @@ dependencies = [
  "cfg-if",
  "libc",
  "psm",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

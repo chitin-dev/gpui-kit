@@ -471,6 +471,9 @@ impl TabGroupSkin {
         }
 
         TabBar::new("tab-bar")
+            .when_some(self.shared.tab_border_color.get(), |this, color| {
+                this.border_color(color)
+            })
             .track_scroll(&self.scroll_handle)
             .when(has_leading, |this| {
                 this.prefix(
@@ -482,7 +485,12 @@ impl TabGroupSkin {
                         .border_r_1()
                         .border_b_1()
                         .h_full()
-                        .border_color(cx.theme().border)
+                        .border_color(
+                            self.shared
+                                .tab_border_color
+                                .get()
+                                .unwrap_or(cx.theme().border),
+                        )
                         .bg(cx.theme().tokens.tab_bar)
                         .px_2()
                         .children(left_button)
@@ -667,7 +675,12 @@ impl TabGroupSkin {
                         })
                         .border_b_1()
                         .h_full()
-                        .border_color(cx.theme().border)
+                        .border_color(
+                            self.shared
+                                .tab_border_color
+                                .get()
+                                .unwrap_or(cx.theme().border),
+                        )
                         .bg(cx.theme().tokens.tab_bar)
                         .px_2()
                         .gap_1()

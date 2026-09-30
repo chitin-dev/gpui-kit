@@ -617,13 +617,23 @@ impl Sizable for Tab {
 }
 
 impl RenderOnce for Tab {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let mut normal_style = self.variant.normal(cx);
         let mut selected_style = self.variant.selected(cx);
         let mut disabled_style = self.variant.disabled(self.selected, cx);
         let mut hover_style = self.variant.hovered(self.selected, cx);
         if self.disabled {
             hover_style = self.variant.disabled(self.selected, cx);
+        }
+        if let Some(color) = self.base.style().border_color {
+            for style in [
+                &mut normal_style,
+                &mut selected_style,
+                &mut disabled_style,
+                &mut hover_style,
+            ] {
+                style.border_color = color;
+            }
         }
         let tab_bar_prefix = self.tab_bar_prefix.unwrap_or_default();
         if !tab_bar_prefix {

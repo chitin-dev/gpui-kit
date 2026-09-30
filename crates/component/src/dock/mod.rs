@@ -24,7 +24,9 @@ mod test_support;
 
 use std::{cell::Cell, rc::Rc};
 
-use gpui::{App, AppContext as _, Context, Entity, SharedString, WeakEntity, Window, actions};
+use gpui::{
+    App, AppContext as _, Context, Entity, Hsla, SharedString, WeakEntity, Window, actions,
+};
 
 /// The behavior half of the panel traits, which every panel implements
 /// alongside [`Panel`]. Exported under this name because `Panel` in this
@@ -82,6 +84,7 @@ pub(crate) struct SkinShared {
     close_button_visible: Cell<bool>,
     menu_button_visible: Cell<bool>,
     toolbar_separator_visible: Cell<bool>,
+    tab_border_color: Cell<Option<Hsla>>,
     /// The dock whose resize handle is being dragged, if any. Only one can be.
     resizing_dock: Cell<Option<DockPlacement>>,
 }
@@ -160,6 +163,7 @@ impl DockSkin {
                 close_button_visible: Cell::new(false),
                 menu_button_visible: Cell::new(true),
                 toolbar_separator_visible: Cell::new(true),
+                tab_border_color: Cell::new(None),
                 resizing_dock: Cell::new(None),
             }),
         })
@@ -176,6 +180,13 @@ impl DockSkin {
 
     pub fn set_panel_style(&self, style: PanelStyle, cx: &mut App) {
         self.shared.panel_style.set(style);
+        self.shared.notify(cx);
+    }
+
+    /// Overrides tab chrome borders without changing layout or interaction.
+    /// Pass `None` to restore the theme's border color.
+    pub fn set_tab_border_color(&self, color: Option<Hsla>, cx: &mut App) {
+        self.shared.tab_border_color.set(color);
         self.shared.notify(cx);
     }
 
