@@ -1539,14 +1539,16 @@ mod tests {
     impl Render for CachedPanelRoot {
         fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
             div().size_full().child(
-                self.inner
-                    .clone()
+                // WGPUI kept `cached` on `AnyView`: gpui-pre also had it on
+                // `Entity`, which is the handle this test holds. Going through
+                // the view handle reaches the same cached subtree.
+                gpui::AnyView::from(self.inner.clone())
                     .cached(gpui::StyleRefinement::default().size_full()),
             )
         }
     }
 
-    /// A dock panel renders its content through `Entity::cached`, which replays
+    /// A dock panel renders its content through `AnyView::cached`, which replays
     /// the recorded frame whenever nothing in it changed: the TextView paints
     /// the same text at the same place without any of its elements running.
     /// Sweeping the participant for the generation it could not stamp cleared

@@ -408,7 +408,7 @@ impl RenderOnce for TitleBar {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gpui::{Rgba, linear_color_stop, linear_gradient};
+    use gpui::{Rgba, gradient_color_stop, linear_gradient};
 
     #[test]
     fn test_default_title_bar_background() {
@@ -419,7 +419,7 @@ mod tests {
             default_title_bar_background(title_bar, background),
             linear_gradient(
                 180.,
-                linear_color_stop(
+                gradient_color_stop(
                     Hsla::from(Rgba {
                         r: 0.45,
                         g: 0.45,
@@ -428,7 +428,7 @@ mod tests {
                     }),
                     0.,
                 ),
-                linear_color_stop(title_bar, 1.),
+                gradient_color_stop(title_bar, 1.),
             )
         );
     }

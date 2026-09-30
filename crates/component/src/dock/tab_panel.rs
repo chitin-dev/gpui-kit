@@ -1297,7 +1297,11 @@ mod tests {
         // Each slot spends a tab bar out of its height and the probe under it
         // measures the rest, so the drawn slots account for the whole dock
         // once one tab bar per drawn slot is added back.
-        let drawn: Pixels = heights.iter().map(|height| height.get()).sum();
+        // WGPUI dropped gpui-pre's `Sum<&Pixels>`, so the slots are added up by
+        // hand rather than through `Iterator::sum`.
+        let drawn: Pixels = heights
+            .iter()
+            .fold(px(0.), |drawn, height| drawn + height.get());
         let bar = (dock_height - drawn) / 3.;
         assert!(
             bar > px(0.) && bar < px(60.),

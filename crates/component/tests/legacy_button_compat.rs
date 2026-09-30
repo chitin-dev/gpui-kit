@@ -1,4 +1,5 @@
 use gpui::{Axis, InteractiveElement as _, ParentElement as _, Styled as _, blue, green, px, red};
+use gpui_base::compat::Anchor;
 use gpui_component::{
     Disableable as _, Icon, IconName, Selectable as _, Sizable as _, Size,
     button::{
@@ -122,7 +123,7 @@ fn legacy_button_group_and_dropdown_paths_remain_available() {
     let dropdown = DropdownButton::new("legacy-dropdown-button")
         .button(Button::new("dropdown-primary").label("Export"))
         .dropdown_menu(|menu, _, _| menu)
-        .dropdown_menu_with_anchor(gpui::Anchor::BottomLeft, |menu, _, _| menu)
+        .dropdown_menu_with_anchor(Anchor::BottomLeft, |menu, _, _| menu)
         .outline()
         .success()
         .disabled(false)

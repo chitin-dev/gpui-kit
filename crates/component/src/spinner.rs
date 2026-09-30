@@ -78,6 +78,7 @@ impl RenderOnce for Spinner {
 mod tests {
     use super::*;
     use gpui::{Render, TestAppContext, px, size};
+    use gpui_base::compat::ReduceMotionExt as _;
 
     struct SpinnerHost;
 

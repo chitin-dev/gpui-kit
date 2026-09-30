@@ -1369,7 +1369,7 @@ impl ButtonVariant {
 mod tests {
     use super::*;
     use crate::IconName;
-    use gpui::{linear_color_stop, linear_gradient, px};
+    use gpui::{gradient_color_stop, linear_gradient, px};
 
     /// A button's announced name is its label, unless it was given one — which
     /// is the case an icon-only button and a row-shaped button both need.
@@ -1924,8 +1924,8 @@ mod tests {
                 ButtonVariant::Danger.normal(false, cx).bg,
                 linear_gradient(
                     180.,
-                    linear_color_stop(crate::try_parse_color("#FEF2F2").unwrap(), 0.),
-                    linear_color_stop(crate::try_parse_color("#FEE2E2").unwrap(), 1.)
+                    gradient_color_stop(crate::try_parse_color("#FEF2F2").unwrap(), 0.),
+                    gradient_color_stop(crate::try_parse_color("#FEE2E2").unwrap(), 1.)
                 )
             );
         });

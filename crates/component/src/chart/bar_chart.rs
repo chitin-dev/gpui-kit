@@ -1448,8 +1448,8 @@ mod tests {
                 .fill(move |_: &f64, _, _, _| {
                     linear_gradient(
                         0.,
-                        gpui::linear_color_stop(gain, 0.),
-                        gpui::linear_color_stop(loss, 1.),
+                        gpui::gradient_color_stop(gain, 0.),
+                        gpui::gradient_color_stop(loss, 1.),
                     )
                 })
                 .bar_color(&1., cx);

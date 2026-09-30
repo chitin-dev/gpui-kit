@@ -837,12 +837,16 @@ impl From<WindowAppearance> for ThemeMode {
 #[cfg(test)]
 mod update_tests {
     use super::*;
-    use gpui::{TestAppContext, linear_color_stop, linear_gradient};
+    use gpui::{TestAppContext, gradient_color_stop, linear_gradient};
 
     fn gradient(from: Hsla, to: Hsla) -> ThemeToken {
         ThemeToken::new(
             from,
-            linear_gradient(135., linear_color_stop(from, 0.), linear_color_stop(to, 1.)),
+            linear_gradient(
+                135.,
+                gradient_color_stop(from, 0.),
+                gradient_color_stop(to, 1.),
+            ),
         )
     }
 

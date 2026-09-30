@@ -796,6 +796,7 @@ impl RenderOnce for Dialog {
 pub(crate) mod tests {
     use super::*;
     use gpui::{AppContext as _, Bounds, Context, Render, TestAppContext, VisualTestContext, size};
+    use gpui_base::compat::ReduceMotionExt as _;
 
     struct DialogHost;
 

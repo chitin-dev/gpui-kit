@@ -414,7 +414,14 @@ mod tests {
     fn legacy_partial_styles_refine_component_theme_defaults() {
         let theme = Theme::default();
         let mut table_head = gpui::StyleRefinement::default();
-        table_head.text.font_weight = Some(gpui::FontWeight::BOLD);
+        // WGPUI's `StyleRefinement::text` is an `Option` — gpui-pre marked the
+        // field `#[refineable]`, so the refinement carried a `TextStyleRefinement`
+        // directly and this was a plain field write. The override is the same
+        // one either way: a refinement whose only set field is the weight.
+        table_head
+            .text
+            .get_or_insert_with(Default::default)
+            .font_weight = Some(gpui::FontWeight::BOLD);
         let inline_code = gpui::HighlightStyle {
             font_style: Some(gpui::FontStyle::Italic),
             ..Default::default()
@@ -429,11 +436,17 @@ mod tests {
 
         assert_eq!(style.table_head().background, Some(theme.table_head.into()));
         assert_eq!(
-            style.table_head().text.color,
-            Some(theme.table_head_foreground)
+            style.table_head().text.as_ref().and_then(|text| text.color),
+            // WGPUI holds text colors as `TextColor`; gpui-pre held the `Hsla`
+            // this theme field still is. Same colour, converted.
+            Some(theme.table_head_foreground.into())
         );
         assert_eq!(
-            style.table_head().text.font_weight,
+            style
+                .table_head()
+                .text
+                .as_ref()
+                .and_then(|text| text.font_weight),
             Some(gpui::FontWeight::BOLD)
         );
         assert_eq!(style.inline_code().background_color, Some(theme.accent));
