@@ -30,11 +30,15 @@ use crate::icon::IconSource;
 
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 use gpui::AssetSource;
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+use gpui::Image;
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
+use gpui::ImageFormat;
 use gpui::{Action, App, Pixels, Point, SharedString, Window};
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
+use std::path::Path;
 #[cfg(any(target_os = "macos", target_os = "windows"))]
-use gpui::{Image, ImageFormat};
-#[cfg(any(target_os = "macos", target_os = "windows"))]
-use std::{path::Path, sync::Arc};
+use std::sync::Arc;
 
 #[cfg(target_os = "macos")]
 mod macos;
@@ -256,7 +260,7 @@ pub(super) fn resolve_icon_image(
     Some(Arc::new(Image::from_bytes(format, bytes)))
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
 fn image_format(path: &str, bytes: &[u8]) -> Option<ImageFormat> {
     if let Some(extension) = Path::new(path)
         .extension()
@@ -271,7 +275,6 @@ fn image_format(path: &str, bytes: &[u8]) -> Option<ImageFormat> {
             "bmp" => ImageFormat::Bmp,
             "tif" | "tiff" => ImageFormat::Tiff,
             "ico" => ImageFormat::Ico,
-            "pbm" | "pgm" | "ppm" | "pnm" => ImageFormat::Pnm,
             _ => return None,
         };
         return Some(format);
@@ -280,7 +283,7 @@ fn image_format(path: &str, bytes: &[u8]) -> Option<ImageFormat> {
     image_format_from_bytes(bytes)
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
 fn image_format_from_bytes(bytes: &[u8]) -> Option<ImageFormat> {
     let bytes = bytes.strip_prefix(b"\xef\xbb\xbf").unwrap_or(bytes);
     if bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
@@ -299,17 +302,12 @@ fn image_format_from_bytes(bytes: &[u8]) -> Option<ImageFormat> {
         Some(ImageFormat::Ico)
     } else if is_svg_bytes(bytes) {
         Some(ImageFormat::Svg)
-    } else if matches!(
-        bytes.get(0..2),
-        Some(b"P1" | b"P2" | b"P3" | b"P4" | b"P5" | b"P6")
-    ) {
-        Some(ImageFormat::Pnm)
     } else {
         None
     }
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
 fn is_svg_bytes(bytes: &[u8]) -> bool {
     let text = match std::str::from_utf8(&bytes[..bytes.len().min(256)]) {
         Ok(text) => text.trim_start(),
@@ -363,6 +361,28 @@ mod tests {
     #[derive(Action, Clone, PartialEq, Deserialize)]
     #[action(namespace = native_menu_tests, no_json)]
     struct TestAction;
+
+    #[test]
+    fn unsupported_pnm_extensions_are_rejected() {
+        for extension in ["pbm", "pgm", "ppm", "pnm"] {
+            assert_eq!(image_format(&format!("icon.{extension}"), b"P6\n"), None);
+        }
+    }
+
+    #[test]
+    fn unsupported_pnm_signatures_are_rejected() {
+        for signature in [b"P1", b"P2", b"P3", b"P4", b"P5", b"P6"] {
+            assert_eq!(image_format("icon", signature), None);
+        }
+    }
+
+    #[test]
+    fn png_signature_is_recognized_without_extension() {
+        assert_eq!(
+            image_format("icon", b"\x89PNG\r\n\x1a\n"),
+            Some(ImageFormat::Png)
+        );
+    }
 
     #[test]
     fn test_native_menu_builder_accepts_icon() {
