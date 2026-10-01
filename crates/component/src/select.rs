@@ -594,10 +594,14 @@ where
                                     let icon = match self.icon.clone() {
                                         Some(icon) => icon
                                             .xsmall()
-                                            .text_color(cx.theme().muted_foreground)
+                                            .when(self.state.appearance, |icon| {
+                                                icon.text_color(cx.theme().muted_foreground)
+                                            })
                                             .into_any_element(),
                                         None => Caret::new(self.state.size)
-                                            .text_color(cx.theme().muted_foreground)
+                                            .when(self.state.appearance, |icon| {
+                                                icon.text_color(cx.theme().muted_foreground)
+                                            })
                                             .into_any_element(),
                                     };
 
