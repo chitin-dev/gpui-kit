@@ -28,6 +28,8 @@ use gpui::{
     App, AppContext as _, Context, Entity, Hsla, SharedString, WeakEntity, Window, actions,
 };
 
+use crate::tab::TabVariant;
+
 /// The behavior half of the panel traits, which every panel implements
 /// alongside [`Panel`]. Exported under this name because `Panel` in this
 /// module is the presentation half that extends it.
@@ -85,6 +87,7 @@ pub(crate) struct SkinShared {
     menu_button_visible: Cell<bool>,
     toolbar_separator_visible: Cell<bool>,
     tab_border_color: Cell<Option<Hsla>>,
+    tab_variant: Cell<TabVariant>,
     /// The dock whose resize handle is being dragged, if any. Only one can be.
     resizing_dock: Cell<Option<DockPlacement>>,
 }
@@ -164,6 +167,7 @@ impl DockSkin {
                 menu_button_visible: Cell::new(true),
                 toolbar_separator_visible: Cell::new(true),
                 tab_border_color: Cell::new(None),
+                tab_variant: Cell::new(TabVariant::default()),
                 resizing_dock: Cell::new(None),
             }),
         })
@@ -187,6 +191,17 @@ impl DockSkin {
     /// Pass `None` to restore the theme's border color.
     pub fn set_tab_border_color(&self, color: Option<Hsla>, cx: &mut App) {
         self.shared.tab_border_color.set(color);
+        self.shared.notify(cx);
+    }
+
+    /// Returns the tab appearance used by every group; defaults to `Tab`.
+    pub fn tab_variant(&self) -> TabVariant {
+        self.shared.tab_variant.get()
+    }
+
+    /// Changes tab appearance without changing docking behavior.
+    pub fn set_tab_variant(&self, variant: TabVariant, cx: &mut App) {
+        self.shared.tab_variant.set(variant);
         self.shared.notify(cx);
     }
 

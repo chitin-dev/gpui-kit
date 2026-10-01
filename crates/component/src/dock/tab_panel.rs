@@ -461,6 +461,10 @@ impl TabGroupSkin {
                 .iter()
                 .position(|panel| panel.panel_id(cx) == displayed)
         });
+        // TabBar's indicator uses visible positions, not the underlying panel index.
+        let selected_ix = displayed_ix
+            .filter(|_| !collapsed)
+            .and_then(|ix| visible.iter().position(|visible_ix| *visible_ix == ix));
 
         // Bring a newly displayed tab into view. The group owns selection now,
         // so the skin notices the change rather than being told about it.
@@ -471,6 +475,8 @@ impl TabGroupSkin {
         }
 
         TabBar::new("tab-bar")
+            .with_variant(self.shared.tab_variant.get())
+            .when_some(selected_ix, |this, ix| this.selected_index(ix))
             .when_some(self.shared.tab_border_color.get(), |this, color| {
                 this.border_color(color)
             })
