@@ -51,7 +51,7 @@ impl PopoverState {
             open: default_open,
             on_open_change: None,
             dismiss_subscription: None,
-            deferred_context: None,
+            deferred_context: default_open.then(|| GlobalState::register_deferred_popover(cx)),
         }
     }
 
