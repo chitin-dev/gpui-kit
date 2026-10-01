@@ -367,7 +367,16 @@ impl RenderOnce for Popover {
                 this.on_mouse_down_out({
                     let state = state.clone();
                     move |_, window, cx| {
-                        state.update(cx, |state, cx| state.dismiss(window, cx));
+                        state.update(cx, |state, cx| {
+                            // Deferred child menus can extend beyond this surface's hitbox.
+                            if state
+                                .deferred_context
+                                .as_ref()
+                                .is_some_and(|token| token.is_topmost(cx))
+                            {
+                                state.dismiss(window, cx);
+                            }
+                        });
                         cx.notify(parent_view_id);
                     }
                 })

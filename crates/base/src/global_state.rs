@@ -15,6 +15,17 @@ use crate::text::TextViewState;
 /// there is nothing inside to read.
 pub struct DeferredPopover(#[allow(dead_code)] Rc<()>);
 
+impl DeferredPopover {
+    pub(crate) fn is_topmost(&self, cx: &App) -> bool {
+        GlobalState::global(cx)
+            .deferred_popovers
+            .iter()
+            .rev()
+            .find_map(Weak::upgrade)
+            .is_some_and(|token| Rc::ptr_eq(&token, &self.0))
+    }
+}
+
 /// Application-wide state shared by Base behaviors.
 pub struct GlobalState {
     app_menus: Vec<OwnedMenu>,
@@ -181,11 +192,15 @@ mod tests {
             GlobalState::init(cx);
 
             let outer = GlobalState::register_deferred_popover(cx);
+            assert!(outer.is_topmost(cx));
             {
-                let _inner = GlobalState::register_deferred_popover(cx);
+                let inner = GlobalState::register_deferred_popover(cx);
                 assert!(GlobalState::is_in_deferred_context(cx));
+                assert!(!outer.is_topmost(cx));
+                assert!(inner.is_topmost(cx));
             }
             assert!(GlobalState::is_in_deferred_context(cx));
+            assert!(outer.is_topmost(cx));
 
             drop(outer);
             assert!(!GlobalState::is_in_deferred_context(cx));
