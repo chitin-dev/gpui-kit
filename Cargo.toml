@@ -55,7 +55,7 @@ story = { path = "crates/story" }
 # and its macros all arrive through `gpui` alone — so the pin is a revision of
 # the fork rather than a set of `gpui-pre-*` versions. Keep this revision in
 # step with every other consumer of the same fork.
-gpui = { package = "gpui-ce", git = "https://github.com/chitin-dev/gpui-wgpu", rev = "d71ebc98a575cf4a69e50c30298759374441c959" }
+gpui = { package = "gpui-ce", git = "https://github.com/chitin-dev/gpui-wgpu", rev = "2209a6040b19d8e7eeaba5a25cc30fdf3c10d6b9" }
 # The one macro `gpui` does not re-export: `derive_inspector_reflection`, which
 # generates the method table the component inspector and the shell's style
 # language read. `gpui-base` puts the attribute on its own `StyledExt`, so it
