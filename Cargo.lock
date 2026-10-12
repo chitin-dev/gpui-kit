@@ -2062,7 +2062,7 @@ dependencies = [
 [[package]]
 name = "gpui-ce"
 version = "1.0.0"
-source = "git+https://github.com/chitin-dev/gpui-wgpu?rev=3679d575d3f912efb3b956684898bdab64efc65c#3679d575d3f912efb3b956684898bdab64efc65c"
+source = "git+https://github.com/chitin-dev/gpui-wgpu?rev=ce07f09bf2f60710e6d1d5426cb4ee0d8177936a#ce07f09bf2f60710e6d1d5426cb4ee0d8177936a"
 dependencies = [
  "anyhow",
  "arboard",
