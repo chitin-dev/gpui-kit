@@ -408,6 +408,7 @@ pub struct Tab {
     size: Size,
     pub(super) disabled: bool,
     pub(super) selected: bool,
+    pub(super) selected_background: Option<Hsla>,
     pub(super) indicator_active: bool,
     pub(super) indicator_ready: bool,
     /// Animation epoch of the [`super::TabBar`] indicator; increments on every
@@ -460,6 +461,7 @@ impl Default for Tab {
             children: Vec::new(),
             disabled: false,
             selected: false,
+            selected_background: None,
             indicator_active: false,
             indicator_ready: true,
             indicator_epoch: 0,
@@ -642,6 +644,25 @@ impl RenderOnce for Tab {
                 selected_style.borders.left = px(0.);
                 disabled_style.borders.left = px(0.);
                 hover_style.borders.left = px(0.);
+            }
+        }
+        if let Some(color) = self.selected_background {
+            match self.variant {
+                TabVariant::Segmented => {
+                    selected_style.inner_bg = color.into();
+                    if self.selected {
+                        hover_style.inner_bg = color.into();
+                        disabled_style.inner_bg = color.opacity(0.5).into();
+                    }
+                }
+                TabVariant::Tab | TabVariant::Pill | TabVariant::Outline => {
+                    selected_style.bg = color.into();
+                    if self.selected {
+                        hover_style.bg = color.into();
+                        disabled_style.bg = color.opacity(0.5).into();
+                    }
+                }
+                TabVariant::Underline => {}
             }
         }
         let tab_style = if self.disabled {

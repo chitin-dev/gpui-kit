@@ -2,7 +2,7 @@ use gpui_base::compat::Anchor;
 use std::{cell::RefCell, rc::Rc};
 
 use gpui::{
-    AnyElement, App, Background, Bounds, Edges, ElementId, InteractiveElement, IntoElement,
+    AnyElement, App, Background, Bounds, Edges, ElementId, Hsla, InteractiveElement, IntoElement,
     ParentElement, Pixels, RenderOnce, ScrollHandle, SharedString, StatefulInteractiveElement as _,
     StyleRefinement, Styled, Window, div, prelude::FluentBuilder as _, px,
 };
@@ -48,6 +48,7 @@ pub struct TabBar {
     children: SmallVec<[Tab; 2]>,
     last_empty_space: AnyElement,
     selected_index: Option<usize>,
+    selected_background: Option<Hsla>,
     variant: TabVariant,
     size: Size,
     menu: bool,
@@ -71,6 +72,7 @@ impl TabBar {
             size: Size::default(),
             last_empty_space: div().w_3().into_any_element(),
             selected_index: None,
+            selected_background: None,
             on_click: None,
             menu: false,
             max_width: None,
@@ -157,6 +159,15 @@ impl TabBar {
     /// Set the selected index of the TabBar.
     pub fn selected_index(mut self, index: usize) -> Self {
         self.selected_index = Some(index);
+        self
+    }
+
+    /// Overrides the selected surface fill without changing the global theme.
+    ///
+    /// Applied to both the animated indicator and the first-frame fallback.
+    /// Underline tabs retain their line-only selection appearance.
+    pub fn selected_background(mut self, color: Hsla) -> Self {
+        self.selected_background = Some(color);
         self
     }
 
@@ -256,14 +267,20 @@ impl TabBar {
                     div()
                         .w_full()
                         .h(inner_height)
-                        .bg(cx.theme().tokens.background)
+                        .bg(self
+                            .selected_background
+                            .map(Background::from)
+                            .unwrap_or_else(|| cx.theme().tokens.background.into()))
                         .rounded(inner_radius)
                         .shadow(raised_shadow()),
                 ),
                 TabVariant::Pill => el.flex().items_center().child(
                     div()
                         .size_full()
-                        .bg(cx.theme().tokens.primary)
+                        .bg(self
+                            .selected_background
+                            .map(Background::from)
+                            .unwrap_or_else(|| cx.theme().tokens.primary.into()))
                         .rounded(cx.theme().radius_full()),
                 ),
                 TabVariant::Underline => el.child(
@@ -454,6 +471,7 @@ impl RenderOnce for TabBar {
             tab.indicator_active = has_indicator;
             tab.indicator_ready = indicator_ready;
             tab.indicator_epoch = indicator_epoch;
+            tab.selected_background = self.selected_background;
             let mut tab = tab
                 .when_some(selected_index, |tab, selected_index| {
                     tab.selected(selected_index == ix)
@@ -598,6 +616,15 @@ mod tests {
     use gpui::{Context, Modifiers, Render, TestAppContext};
 
     use super::*;
+
+    #[test]
+    fn selected_background_should_be_local_to_the_configured_bar() {
+        let color: gpui::Hsla = gpui::rgb(0x353535).into();
+        let configured = super::TabBar::new("configured").selected_background(color);
+        let unchanged = super::TabBar::new("unchanged");
+        assert_eq!(configured.selected_background, Some(color));
+        assert_eq!(unchanged.selected_background, None);
+    }
 
     struct Harness {
         group_handler: bool,
