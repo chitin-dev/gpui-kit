@@ -16,7 +16,10 @@ edition.workspace = true
 workspace = true
 
 [features]
-default = ["component", "assets"]
+default = ["component", "assets", "x11", "wayland"]
+# Applications that disable defaults own the Linux window-system selection.
+x11 = ["gpui/x11"]
+wayland = ["gpui/wayland"]
 # The styled component library, `gpui_kit::component`. Initializes `gpui-base` too.
 component = ["dep:gpui-component"]
 # The default icon set for `gpui-component`, `gpui_kit::assets`.
