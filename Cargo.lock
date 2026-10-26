@@ -2016,7 +2016,7 @@ dependencies = [
  "log",
  "presser",
  "thiserror 2.0.20",
- "windows 0.62.2",
+ "windows 0.58.0",
 ]
 
 [[package]]
@@ -2062,7 +2062,7 @@ dependencies = [
 [[package]]
 name = "gpui-ce"
 version = "1.0.0"
-source = "git+https://github.com/chitin-dev/gpui-wgpu?rev=b24e78872ae68e68cbdccc3571dfce5859144b4f#b24e78872ae68e68cbdccc3571dfce5859144b4f"
+source = "git+https://github.com/chitin-dev/gpui-wgpu?rev=d729d4640a0213d0a51de9b7d7ff014f93c472c7#d729d4640a0213d0a51de9b7d7ff014f93c472c7"
 dependencies = [
  "anyhow",
  "arboard",
@@ -2778,7 +2778,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.62.2",
+ "windows-core 0.58.0",
 ]
 
 [[package]]
